@@ -1,19 +1,20 @@
-import streamlit as st
+from pathlib import Path
 import joblib
-
+import streamlit as st
 
 @st.cache_resource
 def load_model():
-    # Option A: absolute path (make sure this file exists)
-    model_path = r"C:\Users\Asus Vivobook\Documents\APPS PYTHON\EDA\ML\REVIEWS AMAZON\modelo_sentiment_avanzado_LinearSVC.pkl"
-    
-    # Option B (if the .pkl is in the same folder as app.py):
-    # model_path = "modelo_sentiment_avanzado_LinearSVC.pkl"
-    
+    # Carpeta donde está este script
+    base_path = Path(__file__).parent
+    # Ruta al modelo dentro del proyecto
+    model_path = base_path / "models" / "modelo_entrenado.pkl"
+
+    # Opcional: debug
+    # st.write(f"Intentando cargar modelo de: {model_path}")
+
     model = joblib.load(model_path)
     return model
 
-model = load_model()
 
 
 # Interfaz
@@ -58,5 +59,6 @@ if st.button("Classify sentiment"):
 
             
             st.progress(prob_1 if prediction == 1 else prob_0)
+
 
 
