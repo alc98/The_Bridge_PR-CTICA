@@ -3,6 +3,10 @@ import pandas as pd
 import plotly.express as px
 from PIL import Image
 import datetime
+import requests
+import base64
+import io
+import numpy as np
 
 # =========================
 # CONFIGURACIÓN DE PÁGINA
@@ -45,7 +49,56 @@ TUMOR_COL = "Tumor"  # p.ej. 0 = no tumor, 1 = tumor
 
 
 # =========================================================
-# PÁGINA 1 – INTRO: warning, explicación cáncer + modelo
+# UTILS PARA LLAMAR A LA API FLASK
+# =========================================================
+def call_flask_model(api_url: str, pil_image: Image.Image):
+    """
+    Llama a tu API Flask con una imagen MRI y devuelve la respuesta JSON.
+
+    Se asume un endpoint tipo:
+        POST {api_url}/predict
+        body JSON: { "image_base64": "<...>" }
+
+    Y una respuesta tipo:
+        {
+          "has_tumor": true/false,
+          "probability": 0.93,
+          "mask_base64": "<opcional, máscara PNG en base64>"
+        }
+
+    ADAPTA los nombres de endpoint y campos a lo que tengas en tu Flask.
+    """
+    # Aseguramos RGB
+    pil_image = pil_image.convert("RGB")
+
+    # Imagen -> PNG en memoria -> base64
+    buf = io.BytesIO()
+    pil_image.save(buf, format="PNG")
+    img_bytes = buf.getvalue()
+    img_b64 = base64.b64encode(img_bytes).decode("utf-8")
+
+    url = api_url.rstrip("/") + "/predict"   # <-- cambia "/predict" si tu endpoint se llama distinto
+
+    resp = requests.post(
+        url,
+        json={"image_base64": img_b64},
+        timeout=60
+    )
+    resp.raise_for_status()
+    return resp.json()
+
+
+def decode_mask_from_b64(mask_b64: str) -> np.ndarray:
+    """
+    Convierte una máscara PNG en base64 a un array numpy.
+    """
+    mask_bytes = base64.b64decode(mask_b64)
+    mask_img = Image.open(io.BytesIO(mask_bytes))
+    return np.array(mask_img)
+
+
+# =========================================================
+# PÁGINA 1 – INTRO: warning, explicación cáncer
 # =========================================================
 def page_intro():
     st.header("🧠 Detección y segmentación de tumores cerebrales")
@@ -61,28 +114,89 @@ def page_intro():
         "pero la delimitación manual es lenta y dependiente del especialista."
     )
 
-    st.markdown("## Nuestra propuesta de modelo")
-    st.info(
-        "En este proyecto utilizamos un modelo de **segmentación automática** "
-        "entrenado sobre imágenes de resonancia. El modelo identifica, píxel a píxel, "
-        "la región tumoral, generando una **máscara** que coloreamos en rojo sobre la MRI.\n\n"
-        "**¿Por qué ayuda esto al problema?**\n"
-        "- Reduce el tiempo de segmentación manual.\n"
-        "- Aporta medidas cuantitativas (tamaño, porcentaje de corte ocupado).\n"
-        "- Facilita el seguimiento de la evolución del tumor entre estudios."
-    )
-
     st.markdown("---")
     st.markdown(
-        "En las siguientes páginas podrás ver:\n"
+        "En esta demo verás:\n"
         "- Estadísticas de la cohorte de pacientes.\n"
         "- Ejemplos de casos positivos y negativos.\n"
-        "- Visualizaciones interactivas y contenido multimedia."
+        "- Cómo un modelo de deep learning puede predecir si una MRI tiene tumor."
     )
 
 
 # =========================================================
-# PÁGINA 2 – DATAFRAME + GRÁFICAS (pie, barras, selectbox)
+# PÁGINA 2 – EXPLICACIÓN DEL MODELO
+# =========================================================
+def page_model():
+    st.header("🧬 Modelo de deep learning")
+
+    st.markdown("## Arquitectura general")
+    st.markdown(
+        """
+        Nuestro sistema de IA médica se basa en un **modelo de deep learning** que trabaja con
+        cortes de resonancia magnética (MRI) del cerebro.
+
+        A alto nivel, el flujo es:
+
+        1. **Entrada**: imagen de MRI (normalizada y redimensionada).
+        2. **Red neuronal** (p.ej. U-Net o CNN):
+           - Extrae patrones visuales (bordes, texturas, regiones hiperintensas...).
+           - Aprende a distinguir entre tejido sano y tejido tumoral.
+        3. **Salida**:
+           - Una **predicción de clase**: tiene tumor / no tiene tumor.
+           - Opcionalmente, una **máscara de segmentación** que marca los píxeles tumorales.
+        """
+    )
+
+    st.markdown("## Entrenamiento (resumen)")
+    st.markdown(
+        """
+        - **Datos**: dataset de resonancias MRI con anotaciones de tumor.
+        - **Etiquetas**:
+          - Para clasificación: `0` = sin tumor, `1` = con tumor.
+          - Para segmentación: máscaras donde cada píxel indica tumor/no tumor.
+        - **Procedimiento**:
+          - División en *train / validation / test*.
+          - Entrenamiento por épocas minimizando una función de pérdida
+            (por ejemplo, *Binary Cross-Entropy* para clasificación o
+            *Dice loss* para segmentación).
+        - **Métricas típicas**:
+          - Clasificación: accuracy, F1, sensibilidad, especificidad.
+          - Segmentación: Dice coefficient, IoU.
+        """
+    )
+
+    st.markdown("## Integración con Flask")
+    st.info(
+        """
+        El modelo está desplegado dentro de una **API Flask**:
+
+        - La app Flask expone un endpoint HTTP (por ejemplo, `/predict`).
+        - Streamlit envía la imagen MRI al endpoint en formato base64.
+        - Flask ejecuta el modelo de deep learning y devuelve:
+          - si hay tumor o no (`has_tumor`)
+          - la probabilidad (`probability`)
+          - opcionalmente, una máscara (`mask_base64`).
+
+        Esta separación permite:
+        - Escalar el modelo de forma independiente (GPU/CPU).
+        - Usar Streamlit solo como interfaz visual ligera.
+        """
+    )
+
+    st.markdown("## Limitaciones y uso responsable")
+    st.warning(
+        """
+        Esta aplicación es una **prueba de concepto** (PoC):
+
+        - No sustituye el criterio de un profesional médico.
+        - Las predicciones pueden contener errores.
+        - Cualquier uso clínico real debe pasar por validaciones rigurosas.
+        """
+    )
+
+
+# =========================================================
+# PÁGINA 3 – DATAFRAME + GRÁFICAS (pie, barras, selectbox)
 # =========================================================
 def page_dataset():
     st.header("📊 Análisis de la base de datos")
@@ -91,7 +205,6 @@ def page_dataset():
         st.error("No se ha encontrado `data.csv`. Colócalo junto a `app.py` y recarga la página.")
         return
 
-    # Resumen rápido
     st.caption(f"Filas: {df.shape[0]} · Columnas: {df.shape[1]}")
 
     tab_tabla, tab_graficas = st.tabs(["📄 Tabla", "📈 Gráficas"])
@@ -101,10 +214,8 @@ def page_dataset():
         st.dataframe(df)
 
     with tab_graficas:
-        # Comprobamos columnas
         if GENDER_COL not in df.columns:
-            st.info(f"No se encontró la columna `{GENDER_COL}` en el CSV. "
-                    "Actualiza el nombre en el código si tu columna se llama distinto.")
+            st.info(f"No se encontró la columna `{GENDER_COL}` en el CSV.")
             return
 
         st.markdown("### Distribución por género")
@@ -119,11 +230,9 @@ def page_dataset():
         )
         st.plotly_chart(fig_pie, use_container_width=True)
 
-        # Probabilidad media de tumor por género (si existe columna boolean / 0-1)
         if TUMOR_COL in df.columns:
             st.markdown("### Probabilidad de tumor por género")
 
-            # Si TUMOR_COL es 0/1 o bool, el mean() es la probabilidad
             df_avg = df.groupby(GENDER_COL)[TUMOR_COL].mean().reset_index(name="Tumor_Prob")
 
             fig_bar = px.bar(
@@ -135,7 +244,6 @@ def page_dataset():
             )
             st.plotly_chart(fig_bar, use_container_width=True)
 
-            # Selectbox con géneros y mostrar la probabilidad
             st.markdown("### Consulta por género")
             genders = df[GENDER_COL].dropna().unique().tolist()
             sel_gender = st.selectbox("Selecciona género", genders)
@@ -147,7 +255,6 @@ def page_dataset():
                     f"**{prob_sel[0]*100:.2f}%**"
                 )
 
-            # Gráfico de clases por bool (distribución global de tumor vs no tumor)
             st.markdown("### Distribución global de clases (tumor vs no tumor)")
 
             class_counts = df[TUMOR_COL].value_counts().reset_index()
@@ -169,7 +276,7 @@ def page_dataset():
 
 
 # =========================================================
-# PÁGINA 3 – CASOS POSITIVO/NEGATIVO CON MÁSCARA
+# PÁGINA 4 – CASOS POSITIVO/NEGATIVO CON MÁSCARA
 # =========================================================
 def page_cases():
     st.header("🖼️ Casos ejemplo: negativo vs positivo")
@@ -179,7 +286,6 @@ def page_cases():
         "y un paciente **con tumor** (caso positivo), junto con sus máscaras de segmentación."
     )
 
-    # Cambia las rutas por tus imágenes reales:
     neg_img_path = "images/caso_negativo_mri.png"
     neg_mask_path = "images/caso_negativo_mask.png"
     pos_img_path = "images/caso_positivo_mri.png"
@@ -226,21 +332,87 @@ def page_cases():
 
 
 # =========================================================
-# PÁGINA 4 – MULTIMEDIA: FOTOS, VÍDEO, CITA
+# PÁGINA 5 – PREDICCIÓN EN VIVO (SUBIR FOTO -> FLASK)
+# =========================================================
+def page_live_prediction():
+    st.header("🔍 Predicción en vivo con modelo Flask")
+
+    st.markdown(
+        """
+        Sube una imagen de MRI y el sistema consultará al **modelo de deep learning**
+        desplegado en Flask para predecir si hay tumor o no.
+        """
+    )
+
+    st.sidebar.markdown("### ⚙️ Configuración de la API Flask")
+    api_url = st.sidebar.text_input("URL base de la API", "http://localhost:8000")
+
+    uploaded_file = st.file_uploader(
+        "Sube una imagen MRI (PNG/JPG)",
+        type=["png", "jpg", "jpeg"]
+    )
+
+    if uploaded_file is not None:
+        pil_img = Image.open(uploaded_file)
+        st.image(pil_img, caption="MRI subida", use_column_width=True)
+
+        if st.button("Analizar MRI"):
+            with st.spinner("Consultando modelo en Flask..."):
+                try:
+                    response = call_flask_model(api_url, pil_img)
+                except Exception as e:
+                    st.error(f"Error al llamar a la API: {e}")
+                    return
+
+            st.markdown("### Resultado del modelo")
+
+            # ADAPTA estas claves a tu API real:
+            has_tumor = response.get("has_tumor", None)
+            prob = response.get("probability", None)
+
+            if has_tumor is None or prob is None:
+                st.error(
+                    "La respuesta de la API no contiene las claves esperadas "
+                    "(`has_tumor`, `probability`). Ajusta el código a tu formato."
+                )
+            else:
+                diagnosis = "TUMOR DETECTADO" if has_tumor else "SIN INDICIOS DE TUMOR"
+                color = "🔴" if has_tumor else "🟢"
+
+                st.metric(
+                    label="Diagnóstico del modelo",
+                    value=f"{color} {diagnosis}"
+                )
+                st.metric(
+                    label="Probabilidad de tumor",
+                    value=f"{prob*100:.2f} %"
+                )
+
+            # Si tu API devuelve una máscara en base64, la mostramos
+            mask_b64 = response.get("mask_base64", None)
+            if mask_b64:
+                st.markdown("### Máscara de segmentación (opcional)")
+                try:
+                    mask_arr = decode_mask_from_b64(mask_b64)
+                    st.image(mask_arr, caption="Máscara predicha por el modelo", use_column_width=True)
+                except Exception:
+                    st.info("No se pudo decodificar la máscara devuelta por la API.")
+
+
+# =========================================================
+# PÁGINA 6 – MULTIMEDIA: FOTOS, VÍDEO, CITA
 # =========================================================
 def page_media():
     st.header("🎥 Demo visual y cita")
 
     st.subheader("Imágenes de ejemplo")
 
-    # Imagen local
     try:
         img_local = Image.open("imagen.png")  # cambia a tu ruta
         st.image(img_local, caption="Imagen local de ejemplo", use_column_width=True)
     except Exception:
         st.info("Coloca una imagen llamada `imagen.png` junto a `app.py` o cambia la ruta.")
 
-    # Imagen desde URL (solo demostración)
     st.image(
         "https://picsum.photos/1280",
         caption="Imagen de ejemplo desde URL",
@@ -248,7 +420,6 @@ def page_media():
     )
 
     st.subheader("Vídeo demostrativo de la app / modelo")
-    # Vídeo local
     try:
         with open("video.mp4", "rb") as video_file:   # cambia a tu ruta
             video_bytes = video_file.read()
@@ -272,23 +443,30 @@ def main():
 
     menu = [
         "🏠 Introducción",
+        "🧬 Modelo de deep learning",
         "📊 Base de datos y gráficas",
         "🖼️ Casos ejemplo",
+        "🔍 Predicción en vivo",
         "🎥 Multimedia y cita"
     ]
 
-    choice = st.sidebar.selectbox("", menu)
+    # 👇 radio en vez de selectbox → las opciones se ven debajo del texto
+    choice = st.sidebar.radio("Selecciona una página:", menu)
 
     if choice == "🏠 Introducción":
         page_intro()
+    elif choice == "🧬 Modelo de deep learning":
+        page_model()
     elif choice == "📊 Base de datos y gráficas":
         page_dataset()
     elif choice == "🖼️ Casos ejemplo":
         page_cases()
+    elif choice == "🔍 Predicción en vivo":
+        page_live_prediction()
     elif choice == "🎥 Multimedia y cita":
         page_media()
 
-
 if __name__ == "__main__":
     main()
+
 
