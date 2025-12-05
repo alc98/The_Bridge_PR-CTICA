@@ -431,10 +431,87 @@ def page_media():
     cita = st.date_input("Selecciona una fecha para la cita de revisión", datetime.date.today())
     st.success(f"Fecha seleccionada: {cita.strftime('%d/%m/%Y')}")
 
+def page_team():
+    st.header("👥 Equipo del proyecto")
+
+    st.markdown(
+        """
+        Este trabajo ha sido desarrollado por un equipo multidisciplinar de estudiantes
+        de Data Science y desarrollo backend.  
+        
+        A continuación puedes ver nuestros perfiles y enlaces a GitHub.
+        """
+    )
+
+    # 👉 Rellena estos datos con vuestra info real
+    team = [
+        {
+            "name": "Nombre 1",
+            "role": "ML Engineer",
+            "github": "https://github.com/usuario1",
+            "photo": "images/team/miembro1.jpg"
+        },
+        {
+            "name": "Nombre 2",
+            "role": "Backend Developer",
+            "github": "https://github.com/usuario2",
+            "photo": "images/team/miembro2.jpg"
+        },
+        {
+            "name": "Nombre 3",
+            "role": "Data Scientist",
+            "github": "https://github.com/usuario3",
+            "photo": "images/team/miembro3.jpg"
+        },
+        {
+            "name": "Nombre 4",
+            "role": "MLOps & Cloud",
+            "github": "https://github.com/usuario4",
+            "photo": "images/team/miembro4.jpg"
+        },
+        {
+            "name": "Nombre 5",
+            "role": "Frontend & UX",
+            "github": "https://github.com/usuario5",
+            "photo": "images/team/miembro5.jpg"
+        },
+        {
+            "name": "Nombre 6",
+            "role": "Data Engineer",
+            "github": "https://github.com/usuario6",
+            "photo": "images/team/miembro6.jpg"
+        },
+    ]
+
+    # 2 filas x 3 columnas
+    for row_start in range(0, len(team), 3):
+        cols = st.columns(3)
+        for col, member in zip(cols, team[row_start:row_start + 3]):
+            with col:
+                st.markdown("### " + member["name"])
+                # Foto (si existe)
+                try:
+                    img = Image.open(member["photo"])
+                    st.image(img, use_column_width=True, caption=member["role"])
+                except Exception:
+                    st.info(f"Foto no encontrada: `{member['photo']}`")
+
+                # GitHub bonito
+                st.markdown(
+                    f"[🌐 GitHub]({member['github']})",
+                    unsafe_allow_html=True
+                )
+
 
 # =========================
 # MENÚ PRINCIPAL (SIDEBAR)
 # =========================
+def main():
+    st.title("Brain MRI Tumor – Demo Streamlit")
+
+    st.sidebar.header("Navegación")
+    st.sidebar.caption("Elige una sección para explorar el proyecto.")
+
 def main():
     st.title("Brain MRI Tumor – Demo Streamlit")
 
@@ -447,10 +524,11 @@ def main():
         "📊 Base de datos y gráficas",
         "🖼️ Casos ejemplo",
         "🔍 Predicción en vivo",
-        "🎥 Multimedia y cita"
+        "🎥 Multimedia y cita",
+        "👥 Equipo"
     ]
 
-    # 👇 radio en vez de selectbox → las opciones se ven debajo del texto
+    # Usamos radio para ver todas las opciones debajo del texto
     choice = st.sidebar.radio("Selecciona una página:", menu)
 
     if choice == "🏠 Introducción":
@@ -465,8 +543,11 @@ def main():
         page_live_prediction()
     elif choice == "🎥 Multimedia y cita":
         page_media()
+    elif choice == "👥 Equipo":
+        page_team()
 
 if __name__ == "__main__":
     main()
+
 
 
