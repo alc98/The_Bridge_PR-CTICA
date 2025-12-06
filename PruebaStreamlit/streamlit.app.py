@@ -1,4 +1,4 @@
-import streamlit as st
+import streamlit as st  
 import pandas as pd
 import plotly.express as px
 from PIL import Image
@@ -8,9 +8,6 @@ import base64
 import io
 import numpy as np
 
-
-# Page config & globals
-
 try:
     logo = Image.open("logo.png")
     page_icon = logo
@@ -19,15 +16,14 @@ except Exception:
     page_icon = "🧠"
 
 st.set_page_config(
-    page_title="Brain MRI Tumor – Deep Learning Demo",
+    page_title="Brain MRI Tumor App",
     page_icon=page_icon,
     layout="wide",
-    initial_sidebar_state="collapsed",
+    initial_sidebar_state="collapsed"
 )
 
 @st.cache_data
 def load_data(path: str = "data.csv") -> pd.DataFrame:
-    """Load cohort CSV. Returns empty DataFrame if not found."""
     try:
         df = pd.read_csv(path)
     except FileNotFoundError:
@@ -36,16 +32,10 @@ def load_data(path: str = "data.csv") -> pd.DataFrame:
 
 df = load_data()
 
-
 GENDER_COL = "Gender"
-TUMOR_COL = "Tumor"  #0 = no tumor, 1 = tumor
-
-
-
-# API client utilities (Flask model)
+TUMOR_COL = "Tumor"
 
 def call_flask_model(api_url: str, pil_image: Image.Image):
-    """Send an MRI slice to the Flask API and return the JSON response."""
     pil_image = pil_image.convert("RGB")
 
     buf = io.BytesIO()
@@ -58,151 +48,302 @@ def call_flask_model(api_url: str, pil_image: Image.Image):
     resp = requests.post(
         url,
         json={"image_base64": img_b64},
-        timeout=60,
+        timeout=60
     )
     resp.raise_for_status()
     return resp.json()
 
-
 def decode_mask_from_b64(mask_b64: str) -> np.ndarray:
-    """Decode a PNG mask from base64 to a NumPy array."""
     mask_bytes = base64.b64decode(mask_b64)
     mask_img = Image.open(io.BytesIO(mask_bytes))
     return np.array(mask_img)
 
-
-
-# PAGE 1 – TECHNICAL OVERVIEW
-
 def page_intro():
-    st.header("🧠 Brain Tumor Detection and Segmentation")
+    st.header("🧠 Brain tumor detection and segmentation")
 
     if logo is not None:
         st.image(logo, width=120)
 
-    st.markdown("## Clinical and technical overview")
-
-    st.info(
-        """
-        This demo focuses on **automatic brain tumor analysis** from structural MRI,
-        with a particular emphasis on **low-grade gliomas (LGG)** and related lesions.
-
-        From a **machine learning** perspective, the problem can be formulated as:
-        - **Binary classification**: *tumor present* vs. *no visible tumor*.
-        - **Semantic segmentation**: pixel-wise delineation of tumor tissue.
-        """
-    )
-
-    st.markdown(
-        """
-        ### Pipeline (high-level)
-
-        1. **Input data**  
-           - 2D MRI slices (e.g., T1, T2, FLAIR) preprocessed and resampled.
-           - Basic metadata such as gender, age, and tumor label.
-
-        2. **Deep learning models**  
-           - **Classification**: convolutional neural networks (CNNs) that output a probability
-             of tumor presence for a given slice or volume.
-           - **Segmentation**: encoder–decoder architectures such as **U-Net**, predicting
-             a binary mask over the brain.
-
-        3. **Outputs**  
-           - A **probability score** (e.g., `p(tumor)`).
-           - Optional **segmentation masks** highlighting the tumor region.
-        """
+    st.markdown("## Introduction to the clinical problem")
+    st.warning(
+        "Brain cancer, and in particular low-grade gliomas (LGG), "
+        "requires early diagnosis and careful monitoring. "
+        "Magnetic resonance imaging (MRI) allows us to visualize the tumor, "
+        "but manual delineation is slow and highly dependent on the specialist."
     )
 
     st.markdown("---")
-
     st.markdown(
-        """
-        In this Streamlit app you can explore:
+        "In this demo you will see:\n"
+        "- Statistics of the patient cohort.\n"
+        "- Example positive and negative cases.\n"
+        "- How a deep learning model can predict whether an MRI contains a tumor."
+    )
 
-        - **Cohort statistics** and class balance (dataset page).
-        - **Example negative and positive cases** with masks.
-        - A **live inference demo** calling a Flask API that wraps
-          the deep learning model.
+    st.info(
+        """
+        From a clinical perspective, low-grade gliomas often affect relatively young
+        adults and may present with seizures, headaches or subtle cognitive changes.
+        Even though they are classified as "low grade", they can progress to
+        high-grade gliomas, so longitudinal monitoring with MRI and, when indicated,
+        histopathological and molecular analysis (e.g. IDH mutation, 1p/19q codeletion)
+        are key for prognosis and treatment planning.
         """
     )
 
+    st.markdown(
+        """
+        For radiologists and data scientists, MRI is interesting because it combines:
+        - **Anatomical detail** (T1- and T2-weighted sequences).
+        - **Edema and tumor extent** visualization (FLAIR).
+        - In some protocols, **functional information** such as diffusion and perfusion,
+          which can correlate with cell density and vascularity.
+        Integrating these heterogeneous sources of information is one of the main
+        motivations for using deep learning in neuro-oncology.
+        """
+    )
 
+def page_model():
+    st.header("🧬 Deep learning model")
 
-# PAGE 2 – DATASET & EDA 
+    st.markdown("## Introduction to the clinical problem")
+    st.warning(
+        "Brain cancer, and in particular low-grade gliomas (LGG), "
+        "requires early diagnosis and careful monitoring. "
+        "Magnetic resonance imaging (MRI) allows us to visualize the tumor, "
+        "but manual delineation is slow and highly dependent on the specialist."
+    )
+
+    st.markdown("---")
+    st.markdown(
+        "In this demo you will see:\n"
+        "- Statistics of the patient cohort.\n"
+        "- Example positive and negative cases.\n"
+        "- How a deep learning model can predict whether an MRI contains a tumor."
+    )
+
+    st.markdown(
+        """
+        In a real hospital workflow, such a model would typically act as a
+        **decision-support tool** or “second reader”. It can:
+        - Highlight suspicious regions that deserve closer inspection.
+        - Provide quantitative measurements (e.g. tumor volume).
+        - Help standardize reports across radiologists.
+        Final responsibility for diagnosis and treatment decisions always remains
+        with the clinical team.
+        """
+    )
+
+    st.markdown("## General architecture")
+    st.markdown(
+        """
+        Our medical AI system is based on a **deep learning model** that operates on
+        brain MRI slices.
+
+        At a high level, the pipeline is:
+
+        1. **Input**: MRI image (normalized and resized).
+        2. **Neural network** (e.g. U-Net or CNN):
+           - Extracts visual patterns (edges, textures, hyperintense regions...).
+           - Learns to distinguish between healthy tissue and tumor tissue.
+        3. **Output**:
+           - A **class prediction**: tumor / no tumor.
+           - Optionally, a **segmentation mask** highlighting tumor pixels.
+        """
+    )
+
+    st.markdown(
+        """
+        Although this demo focuses on 2D slices, many research systems work with:
+        - **3D convolutions**, which exploit volumetric context across slices.
+        - **Multi-sequence input** (T1, T1+contrast, T2, FLAIR) stacked as channels.
+        - **Multimodal fusion**, combining imaging with clinical variables
+          (age, performance status, molecular markers) or even genomics.
+        This richer input can improve performance for tasks such as grading or prognosis.
+        """
+    )
+
+    st.markdown("## Training (summary)")
+    st.markdown(
+        """
+        - **Data**: MRI dataset with tumor annotations.
+        - **Labels**:
+          - For classification: `0` = no tumor, `1` = tumor.
+          - For segmentation: masks where each pixel indicates tumor/no tumor.
+        - **Procedure**:
+          - Split into *train / validation / test*.
+          - Train for several epochs minimizing a loss function
+            (for example, *Binary Cross-Entropy* for classification or
+            *Dice loss* for segmentation).
+        - **Typical metrics**:
+          - Classification: accuracy, F1, sensitivity, specificity.
+          - Segmentation: Dice coefficient, IoU.
+        """
+    )
+
+    st.markdown("## Data preprocessing and quality control")
+    st.markdown(
+        """
+        Before training any medical imaging model, a robust preprocessing pipeline is essential:
+        - **Skull stripping** to remove non-brain tissue and reduce noise.
+        - **Intensity normalization** per scan to mitigate scanner- or protocol-related variability.
+        - **Spatial registration** to a common template when combining data from multiple patients.
+        - **Resampling to isotropic voxels** so that physical distances are comparable.
+        - **Data augmentation** (rotations, flips, elastic deformations, mild intensity shifts)
+          to improve generalization and simulate real-world acquisition variability.
+        A careful visual QC (quality control) step is usually performed with radiologists
+        to exclude corrupted or mislabeled scans.
+        """
+    )
+
+    st.markdown("## Evaluation and clinical interpretation")
+    st.markdown(
+        """
+        Beyond global metrics, clinicians and data scientists typically:
+        - Inspect **ROC and precision-recall curves** to select thresholds that balance
+          sensitivity (avoiding missed tumors) and specificity (avoiding unnecessary alarms).
+        - Use **calibration curves** to verify that predicted probabilities correspond
+          to actual risk, which is crucial when communicating risk to patients.
+        - Analyze **confusion matrices** stratified by subgroups (age, sex, scanner type,
+          tumor location) to detect potential bias.
+        - Compare performance with human experts in **reader studies** and investigate
+          cases where the model disagrees with the radiologist.
+        - Perform **external validation** on data from other hospitals to test
+          generalization beyond the training cohort.
+        """
+    )
+
+    st.markdown("## Integration with Flask")
+    st.info(
+        """
+        The model is deployed inside a **Flask API**:
+
+        - The Flask app exposes an HTTP endpoint (for example, `/predict`).
+        - Streamlit sends the MRI image to the endpoint in base64 format.
+        - Flask runs the deep learning model and returns:
+          - whether there is a tumor (`has_tumor`)
+          - the probability (`probability`)
+          - optionally, a mask (`mask_base64`).
+
+        This separation allows us to:
+        - Scale the model independently (GPU/CPU).
+        - Use Streamlit only as a lightweight visual interface.
+        """
+    )
+
+    st.markdown(
+        """
+        In a production setting, this architecture would be complemented with:
+        - **Authentication and audit logs** to track who requested each prediction.
+        - **Versioning** of models and training datasets to ensure reproducibility.
+        - **Monitoring** of latency, error rates and data drift to detect when
+          the model may need to be re-evaluated or retrained.
+        - Integration with hospital systems (PACS/RIS) using standards such as DICOM and HL7/FHIR.
+        """
+    )
+
+    st.markdown("## Limitations and responsible use")
+    st.warning(
+        """
+        This application is a **proof of concept** (PoC):
+
+        - It does not replace the judgment of a medical professional.
+        - Predictions may contain errors.
+        - Any real clinical use must undergo rigorous validation.
+        """
+    )
+
+    st.info(
+        """
+        Even models that perform well in retrospective studies can fail once deployed
+        if the patient population, scanners or imaging protocols change over time.
+        Continuous surveillance, periodic re-validation and collaboration between
+        data scientists, clinicians and MLOps engineers are essential for safe,
+        responsible AI in healthcare.
+        """
+    )
 
 def page_dataset():
-    st.header("📊 Dataset and Exploratory Analysis")
+    st.header("📊 Database analysis")
 
     if df.empty:
-        st.error(
-            "No `data.csv` file was found. Place it next to `app.py` and reload "
-            "the app, or update the path in `load_data()`."
-        )
+        st.error("`data.csv` was not found. Place it next to `app.py` and reload the page.")
         return
 
     st.caption(f"Rows: {df.shape[0]} · Columns: {df.shape[1]}")
 
-    tab_table, tab_charts, tab_schema = st.tabs(
-        ["📄 Data table", "📈 Charts", "🧾 Schema / dtypes"]
+    st.markdown(
+        """
+        From an epidemiological and data-science point of view, this dataset represents
+        a simplified cohort. In real projects we would also collect variables such as:
+        - Age, presenting symptoms and performance status.
+        - Tumor grade, histology and molecular markers (e.g. IDH, MGMT, 1p/19q).
+        - Treatment (surgery, radiotherapy, chemotherapy, targeted therapies).
+        - Outcomes such as progression-free and overall survival.
+        These additional features enable models not only for **detection**, but also for
+        **prognosis**, **treatment selection** and **response evaluation**.
+        """
     )
 
-    with tab_table:
-        st.subheader("Raw dataset")
+    tab_tabla, tab_graficas = st.tabs(["📄 Table", "📈 Charts"])
+
+    with tab_tabla:
+        st.subheader("Dataset overview")
         st.dataframe(df)
 
-    with tab_schema:
-        st.subheader("Column summary")
-        st.write(df.dtypes.to_frame("dtype"))
+    with tab_graficas:
+        if GENDER_COL not in df.columns:
+            st.info(f"The column `{GENDER_COL}` was not found in the CSV.")
+            return
 
-    with tab_charts:
-        # Gender distribution
-        if GENDER_COL in df.columns:
-            st.markdown("### Gender distribution")
+        st.markdown("### Distribution by gender")
 
-            df_count = df.groupby(GENDER_COL).size().reset_index(name="count")
+        df_count = df.groupby(GENDER_COL).size().reset_index(name="count")
 
-            fig_pie = px.pie(
-                df_count,
-                values="count",
-                names=GENDER_COL,
-                title="Patients by gender",
-            )
-            st.plotly_chart(fig_pie, use_container_width=True)
-        else:
-            st.info(f"Column `{GENDER_COL}` not found in the CSV.")
+        fig_pie = px.pie(
+            df_count,
+            values="count",
+            names=GENDER_COL,
+            title="Distribution of patients by gender"
+        )
+        st.plotly_chart(fig_pie, use_container_width=True)
 
-        # Tumor statistics if tumor column exists
+        st.caption(
+            "Differences in gender distribution can reflect real epidemiological trends, "
+            "but they may also be influenced by sample size, referral patterns or "
+            "inclusion criteria of the study."
+        )
+
         if TUMOR_COL in df.columns:
             st.markdown("### Tumor probability by gender")
 
-            if GENDER_COL in df.columns:
-                df_avg = (
-                    df.groupby(GENDER_COL)[TUMOR_COL]
-                    .mean()
-                    .reset_index(name="Tumor_Prob")
+            df_avg = df.groupby(GENDER_COL)[TUMOR_COL].mean().reset_index(name="Tumor_Prob")
+
+            fig_bar = px.bar(
+                df_avg,
+                x=GENDER_COL,
+                y="Tumor_Prob",
+                title="Average tumor probability by gender",
+                labels={"Tumor_Prob": "Tumor probability"}
+            )
+            st.plotly_chart(fig_bar, use_container_width=True)
+
+            st.caption(
+                "Gender is usually not sufficient to make individual predictions by itself, "
+                "but it can be useful to describe the cohort and to check that the model's "
+                "performance is not systematically worse in a given subgroup."
+            )
+
+            st.markdown("### Query by gender")
+            genders = df[GENDER_COL].dropna().unique().tolist()
+            sel_gender = st.selectbox("Select gender", genders)
+
+            prob_sel = df_avg.loc[df_avg[GENDER_COL] == sel_gender, "Tumor_Prob"].values
+            if len(prob_sel) > 0:
+                st.success(
+                    f"Estimated average tumor probability for **{sel_gender}**: "
+                    f"**{prob_sel[0]*100:.2f}%**"
                 )
-
-                fig_bar = px.bar(
-                    df_avg,
-                    x=GENDER_COL,
-                    y="Tumor_Prob",
-                    title="Average tumor probability by gender",
-                    labels={"Tumor_Prob": "Tumor probability"},
-                )
-                st.plotly_chart(fig_bar, use_container_width=True)
-
-                st.markdown("### Query by gender")
-                genders = df[GENDER_COL].dropna().unique().tolist()
-                sel_gender = st.selectbox("Select gender", genders)
-
-                prob_sel = df_avg.loc[
-                    df_avg[GENDER_COL] == sel_gender, "Tumor_Prob"
-                ].values
-                if len(prob_sel) > 0:
-                    st.success(
-                        f"Estimated mean tumor probability for **{sel_gender}**: "
-                        f"**{prob_sel[0] * 100:.2f}%**"
-                    )
 
             st.markdown("### Global class distribution (tumor vs no tumor)")
 
@@ -214,144 +355,49 @@ def page_dataset():
                 x="Class",
                 y="Count",
                 title="Number of patients per class (0 = no tumor, 1 = tumor)",
-                text="Count",
+                text="Count"
             )
             st.plotly_chart(fig_bool, use_container_width=True)
+
+            st.caption(
+                "If one class is much more frequent than the other (class imbalance), "
+                "we may need strategies such as re-weighting, resampling or specialized "
+                "loss functions to avoid a model that simply predicts the majority class."
+            )
         else:
             st.info(
-                f"Column `{TUMOR_COL}` not found. Cannot compute tumor-related "
-                "probabilities or class distribution."
+                f"The column `{TUMOR_COL}` was not found to compute probabilities "
+                "or the class distribution."
             )
 
-        # Generic numeric-column exploration
-        numeric_cols = df.select_dtypes(include=["number"]).columns.tolist()
-        if numeric_cols:
-            st.markdown("### Univariate distribution (numeric feature)")
-            num_col = st.selectbox(
-                "Select a numeric column", numeric_cols, key="numeric_eda_select"
-            )
-            fig_hist = px.histogram(
-                df,
-                x=num_col,
-                nbins=30,
-                title=f"Distribution of `{num_col}`",
-            )
-            st.plotly_chart(fig_hist, use_container_width=True)
-
-
-
-# PAGE 3 – MODEL EXPLANATION
-
-def page_model():
-    st.header("🧬 Deep Learning Model")
-
-    st.markdown("## Architecture")
-
-    st.markdown(
-        """
-        The underlying model is a **convolutional neural network** trained on brain MRI:
-
-        - **Backbone**: 2D or 3D CNN with multiple convolution–ReLU–pooling blocks.
-        - **Segmentation head** (optional): U-Net–style decoder with skip connections
-          for high-resolution predictions.
-        - **Classification head**:
-          - Global average pooling.
-          - Fully connected layers.
-          - Sigmoid / softmax output for tumor probability.
-
-        The input images are typically:
-        - Intensity-normalized.
-        - Resampled to a fixed in-plane resolution.
-        - Cropped or padded to a fixed spatial size.
-        """
-    )
-
-    st.markdown("## Training setup")
-
-    st.markdown(
-        """
-        **Data and labels**
-
-        - MRI slices or volumes with **tumor annotations**.
-        - Classification label: `0` = no tumor, `1` = tumor.
-        - Segmentation label: binary mask per voxel / pixel.
-
-        **Training procedure**
-
-        - Split into *train / validation / test*.
-        - Data augmentation (flips, rotations, small intensity shifts).
-        - Optimizer: Adam or similar, with a learning-rate schedule.
-        - Early stopping based on validation loss or Dice score.
-
-        **Loss functions**
-
-        - Classification:
-          - Binary Cross-Entropy (BCE) or focal loss.
-        - Segmentation:
-          - Dice loss, BCE + Dice, or variants (Tversky, focal Tversky).
-        """
-    )
-
-    st.markdown("## Evaluation metrics")
-
-    st.markdown(
-        """
-        - **Classification**
-          - Accuracy
-          - Sensitivity (recall, true positive rate)
-          - Specificity (true negative rate)
-          - ROC AUC, PR AUC
-
-        - **Segmentation**
-          - Dice coefficient
-          - Intersection over Union (IoU)
-          - Precision / recall at pixel level
-        """
-    )
-
-    st.markdown("## Deployment via Flask API")
-
-    st.info(
-        """
-        The trained model is wrapped inside a **Flask API**:
-
-        - Streamlit sends the MRI slice encoded as **base64 PNG** to an endpoint
-          (e.g. `/predict`).
-        - Flask runs the deep learning model and returns:
-          - `has_tumor` (boolean)
-          - `probability` (float in [0, 1])
-          - `mask_base64` (optional, PNG-encoded segmentation mask)
-
-        This design decouples:
-        - **Model serving** (Flask, potentially with GPU acceleration).
-        - **User interface** (this Streamlit dashboard).
-        """
-    )
-
-    st.warning(
-        """
-        This application is a **proof of concept** and is **not** intended for
-        clinical decision making. Any real-world deployment must undergo
-        rigorous validation, regulatory approval, and monitoring.
-        """
-    )
-
-
-# -------------------------------------------------------------------
-# PAGE 4 – EXAMPLE CASES WITH MASKS
-# -------------------------------------------------------------------
 def page_cases():
-    st.header("🖼️ Example Cases: Negative vs Positive")
+    st.header("🖼️ Example cases: negative vs positive")
 
     st.markdown(
-        "This section illustrates a **negative case** (no visible tumor) and a "
-        "**positive case** (tumor present), along with their segmentation masks."
+        "In this section we show an example patient **without tumor** (negative case) "
+        "and a patient **with tumor** (positive case), together with their segmentation masks."
     )
 
-    neg_img_path = "images/negative_case_mri.png"
-    neg_mask_path = "images/negative_case_mask.png"
-    pos_img_path = "images/positive_case_mri.png"
-    pos_mask_path = "images/positive_case_mask.png"
+    st.markdown(
+        """
+        In daily practice, neuroradiologists do not only answer “tumor yes/no”.
+        They carefully assess:
+        - **Location** of the lesion (e.g. frontal vs temporal lobe) and involvement of
+          eloquent areas (motor, language).
+        - **Mass effect and midline shift**, which indicate how much the lesion compresses
+          surrounding structures.
+        - **Edema and infiltration** patterns, often best seen on FLAIR.
+        - **Contrast enhancement** behavior, which can suggest high-grade components
+          or breakdown of the blood-brain barrier.
+        These qualitative descriptors, combined with clinical data, guide biopsy, surgery
+        and follow-up strategy.
+        """
+    )
+
+    neg_img_path = "images/caso_negativo_mri.png"
+    neg_mask_path = "images/caso_negativo_mask.png"
+    pos_img_path = "images/caso_positivo_mri.png"
+    pos_mask_path = "images/caso_positivo_mask.png"
 
     st.markdown("### Negative case (no tumor)")
     col1, col2 = st.columns(2)
@@ -362,15 +408,15 @@ def page_cases():
             neg_img = Image.open(neg_img_path)
             st.image(neg_img, use_column_width=True)
         except Exception:
-            st.info(f"Place the negative-case MRI at `{neg_img_path}`.")
+            st.info(f"Place the negative case image at `{neg_img_path}`.")
 
     with col2:
-        st.caption("Mask – negative case (no tumor region)")
+        st.caption("Mask – negative case (no tumor)")
         try:
             neg_mask = Image.open(neg_mask_path)
             st.image(neg_mask, use_column_width=True)
         except Exception:
-            st.info(f"Place the negative-case mask at `{neg_mask_path}`.")
+            st.info(f"Place the negative case mask at `{neg_mask_path}`.")
 
     st.markdown("---")
     st.markdown("### Positive case (with tumor)")
@@ -382,27 +428,44 @@ def page_cases():
             pos_img = Image.open(pos_img_path)
             st.image(pos_img, use_column_width=True)
         except Exception:
-            st.info(f"Place the positive-case MRI at `{pos_img_path}`.")
+            st.info(f"Place the positive case image at `{pos_img_path}`.")
 
     with col4:
-        st.caption("Mask – positive case (tumor highlighted)")
+        st.caption("Mask – positive case (tumor in red)")
         try:
             pos_mask = Image.open(pos_mask_path)
             st.image(pos_mask, use_column_width=True)
         except Exception:
-            st.info(f"Place the positive-case mask at `{pos_mask_path}`.")
+            st.info(f"Place the positive case mask at `{pos_mask_path}`.")
 
-
-
-# PAGE 5 – LIVE PREDICTION (STREAMLIT -> FLASK)
+    st.info(
+        """
+        The visual examples here are based on single 2D slices. Real-world decisions
+        are based on full 3D studies and multiple MRI sequences, as well as clinical
+        information. The goal of this demo is educational: to illustrate how a model
+        can highlight suspicious regions and complement expert image interpretation.
+        """
+    )
 
 def page_live_prediction():
-    st.header("🔍 Live Inference via Flask Model")
+    st.header("🔍 Live prediction with Flask model")
 
     st.markdown(
         """
-        Upload a brain MRI slice and the app will query the **deep learning model**
-        served by a Flask API to predict whether a tumor is present.
+        Upload an MRI image and the system will query the **deep learning model**
+        deployed in Flask to predict whether there is a tumor or not.
+        """
+    )
+
+    st.markdown(
+        """
+        In a realistic deployment, the input would often be an entire MRI study
+        (many slices and sequences) rather than a single image. A more advanced system
+        could:
+        - Aggregate predictions across slices to provide a per-patient risk score.
+        - Produce a 3D segmentation and estimate total tumor volume.
+        - Track changes over time across multiple exams to quantify treatment response.
+        Here we simplify this process to make the interaction easier to understand.
         """
     )
 
@@ -410,14 +473,24 @@ def page_live_prediction():
     api_url = st.sidebar.text_input("Base API URL", "http://localhost:8000")
 
     uploaded_file = st.file_uploader(
-        "Upload a brain MRI slice (PNG/JPG)", type=["png", "jpg", "jpeg"]
+        "Upload an MRI image (PNG/JPG)",
+        type=["png", "jpg", "jpeg"]
+    )
+
+    st.warning(
+        """
+        Never upload real patient-identifiable data to public demos.
+        In real projects, DICOM images must be properly anonymized (removing names,
+        IDs and any facial features) and handled under strict data protection and
+        ethical guidelines.
+        """
     )
 
     if uploaded_file is not None:
         pil_img = Image.open(uploaded_file)
         st.image(pil_img, caption="Uploaded MRI", use_column_width=True)
 
-        if st.button("Run inference"):
+        if st.button("Analyze MRI"):
             with st.spinner("Querying Flask model..."):
                 try:
                     response = call_flask_model(api_url, pil_img)
@@ -425,7 +498,7 @@ def page_live_prediction():
                     st.error(f"Error calling the API: {e}")
                     return
 
-            st.markdown("### Model output")
+            st.markdown("### Model result")
 
             has_tumor = response.get("has_tumor", None)
             prob = response.get("probability", None)
@@ -433,20 +506,29 @@ def page_live_prediction():
             if has_tumor is None or prob is None:
                 st.error(
                     "The API response does not contain the expected keys "
-                    "(`has_tumor`, `probability`). Please adapt the code to "
-                    "your actual API schema."
+                    "(`has_tumor`, `probability`). Adapt the code to your format."
                 )
             else:
-                diagnosis = "TUMOR DETECTED" if has_tumor else "NO TUMOR DETECTED"
+                diagnosis = "TUMOR DETECTED" if has_tumor else "NO SIGNS OF TUMOR"
                 color = "🔴" if has_tumor else "🟢"
 
                 st.metric(
                     label="Model diagnosis",
-                    value=f"{color} {diagnosis}",
+                    value=f"{color} {diagnosis}"
                 )
                 st.metric(
                     label="Tumor probability",
-                    value=f"{prob * 100:.2f} %",
+                    value=f"{prob*100:.2f} %"
+                )
+
+                st.markdown(
+                    """
+                    The reported probability should be interpreted as an approximate
+                    **risk score**, not as a definitive diagnosis. Values close to 0.5
+                    usually indicate uncertainty; in that range, the model should only
+                    be used as a prompt for closer human review, never as an automatic
+                    decision-maker.
+                    """
                 )
 
             mask_b64 = response.get("mask_base64", None)
@@ -454,36 +536,37 @@ def page_live_prediction():
                 st.markdown("### Segmentation mask (optional)")
                 try:
                     mask_arr = decode_mask_from_b64(mask_b64)
-                    st.image(
-                        mask_arr,
-                        caption="Segmentation mask predicted by the model",
-                        use_column_width=True,
-                    )
+                    st.image(mask_arr, caption="Mask predicted by the model", use_column_width=True)
                 except Exception:
-                    st.info("The returned mask could not be decoded.")
+                    st.info("The mask returned by the API could not be decoded.")
 
-
-
-# PAGE 6 – MEDIA & APPOINTMENT
+                st.caption(
+                    "Segmentation masks allow automatic computation of tumor volume and shape "
+                    "features (radiomics), which can be correlated with prognosis or molecular "
+                    "subtypes in research studies."
+                )
 
 def page_media():
-    st.header("🎥 Visual Demo and Appointment Simulation")
+    st.header("🎥 Visual demo and appointment")
 
     st.subheader("Sample images")
 
     try:
-        img_local = Image.open("image.png")
+        img_local = Image.open("imagen.png")
         st.image(img_local, caption="Local sample image", use_column_width=True)
     except Exception:
-        st.info(
-            "Place an image named `image.png` next to `app.py` or update the path "
-            "in the code."
-        )
+        st.info("Place an image named `imagen.png` next to `app.py` or change the path.")
 
     st.image(
         "https://picsum.photos/1280",
         caption="Sample image from URL",
-        use_column_width=True,
+        use_column_width=True
+    )
+
+    st.caption(
+        "The images shown here are generic examples. In a real educational or clinical "
+        "setting, you would use curated MRI cases that have been anonymized and approved "
+        "for teaching or demonstration purposes."
     )
 
     st.subheader("Demo video of the app / model")
@@ -492,74 +575,88 @@ def page_media():
             video_bytes = video_file.read()
         st.video(video_bytes)
     except Exception:
-        st.info(
-            "Place `video.mp4` next to `app.py` or update the path in the code."
-        )
-
-    st.subheader("📅 Follow-up appointment (mock)")
-    appointment = st.date_input(
-        "Select a date for a follow-up appointment", datetime.date.today()
-    )
-    st.success(f"Selected date: {appointment.strftime('%Y-%m-%d')}")
-
-
-
-# PAGE 7 – TEAM
-
-def page_team():
-    st.header("👥 Project Team")
+        st.info("Place a `video.mp4` file next to `app.py` or update the path in the code.")
 
     st.markdown(
         """
-        This project was developed by a **multidisciplinary team** of students in
-        data science and backend engineering.
+        In an integrated hospital environment, a similar interface could be embedded
+        into the radiology workstation or electronic health record to:
+        - Visualize AI-generated segmentations directly on the clinician's screen.
+        - Provide structured summaries of tumor burden over time.
+        - Suggest standardized follow-up intervals according to risk.
+        For now, this demo focuses on showing the core concepts in an accessible way.
+        """
+    )
 
-        Below you can find our profiles and GitHub links.
+    st.subheader("📅 Appointment simulation")
+    cita = st.date_input("Select a date for the follow-up visit", datetime.date.today())
+    st.success(f"Selected date: {cita.strftime('%d/%m/%Y')}")
+
+def page_team():
+    st.header("👥 Project team")
+
+    st.markdown(
+        """
+        This work has been developed by a multidisciplinary team of students
+        in Data Science and backend development.  
+        
+        Below you can see our profiles and GitHub links.
+        """
+    )
+
+    st.markdown(
+        """
+        The project combines:
+        - **Medical and domain knowledge**, to formulate clinically relevant questions.
+        - **Machine learning and MLOps**, to design, train and deploy robust models.
+        - **Data engineering**, to process raw DICOM images into analysis-ready tensors.
+        - **Frontend and UX design**, to create interfaces that fit real clinical workflows.
+        Effective AI in healthcare always requires this kind of cross-disciplinary collaboration.
         """
     )
 
     team = [
         {
-            "name": "Member 1",
+            "name": "Nombre 1",
             "role": "ML Engineer",
-            "github": "https://github.com/user1",
-            "photo": "images/team/member1.jpg",
+            "github": "https://github.com/usuario1",
+            "photo": "images/team/miembro1.jpg"
         },
         {
-            "name": "Member 2",
+            "name": "Nombre 2",
             "role": "Backend Developer",
-            "github": "https://github.com/user2",
-            "photo": "images/team/member2.jpg",
+            "github": "https://github.com/usuario2",
+            "photo": "images/team/miembro2.jpg"
         },
         {
-            "name": "Member 3",
+            "name": "Nombre 3",
             "role": "Data Scientist",
-            "github": "https://github.com/user3",
-            "photo": "images/team/member3.jpg",
+            "github": "https://github.com/usuario3",
+            "photo": "images/team/miembro3.jpg"
         },
         {
-            "name": "Member 4",
+            "name": "Nombre 4",
             "role": "MLOps & Cloud",
-            "github": "https://github.com/user4",
-            "photo": "images/team/member4.jpg",
+            "github": "https://github.com/usuario4",
+            "photo": "images/team/miembro4.jpg"
         },
         {
-            "name": "Member 5",
+            "name": "Nombre 5",
             "role": "Frontend & UX",
-            "github": "https://github.com/user5",
-            "photo": "images/team/member5.jpg",
+            "github": "https://github.com/usuario5",
+            "photo": "images/team/miembro5.jpg"
         },
         {
-            "name": "Member 6",
+            "name": "Nombre 6",
             "role": "Data Engineer",
-            "github": "https://github.com/user6",
-            "photo": "images/team/member6.jpg",
+            "github": "https://github.com/usuario6",
+            "photo": "images/team/miembro6.jpg"
         },
     ]
 
     for row_start in range(0, len(team), 3):
         cols = st.columns(3)
-        for col, member in zip(cols, team[row_start : row_start + 3]):
+        for col, member in zip(cols, team[row_start:row_start + 3]):
             with col:
                 st.markdown("### " + member["name"])
                 try:
@@ -568,45 +665,68 @@ def page_team():
                 except Exception:
                     st.info(f"Photo not found: `{member['photo']}`")
 
-                st.markdown(f"[🌐 GitHub]({member['github']})", unsafe_allow_html=True)
+                st.markdown(
+                    f"[🌐 GitHub]({member['github']})",
+                    unsafe_allow_html=True
+                )
 
-
-
-# MAIN NAVIGATION
+    st.info(
+        """
+        Although this is an academic project, any real-world deployment as a clinical
+        tool would require collaboration with neuroradiologists, neurosurgeons,
+        oncologists, medical physicists and hospital IT teams, as well as regulatory
+        approval as a medical device.
+        """
+    )
 
 def main():
-    st.title("Brain MRI Tumor – Deep Learning Demo")
+    st.title("Brain MRI Tumor – Demo Streamlit")
 
     st.sidebar.header("Navigation")
     st.sidebar.caption("Choose a section to explore the project.")
 
+def main():
+    st.title("Brain MRI Tumor – Demo Streamlit")
+
+    st.sidebar.header("Navigation")
+    st.sidebar.caption("Choose a section to explore the project.")
+
+    st.markdown(
+        """
+        _Educational disclaimer_: this application is intended **only for learning and
+        experimentation in data science and medical imaging**. It must not be used to
+        make or support real diagnostic or therapeutic decisions for patients.
+        """
+    )
+
     menu = [
-        "🏠 Technical overview",
-        "📊 Dataset & exploratory analysis",
+        "🏠 Introduction",
         "🧬 Deep learning model",
+        "📊 Database and charts",
         "🖼️ Example cases",
         "🔍 Live prediction",
-        "🎥 Media & appointment",
-        "👥 Team",
+        "🎥 Media and appointment",
+        "👥 Team"
     ]
 
     choice = st.sidebar.radio("Select a page:", menu)
 
-    if choice == "🏠 Technical overview":
+    if choice == "🏠 Introduction":
         page_intro()
-    elif choice == "📊 Dataset & exploratory analysis":
-        page_dataset()
     elif choice == "🧬 Deep learning model":
         page_model()
+    elif choice == "📊 Database and charts":
+        page_dataset()
     elif choice == "🖼️ Example cases":
         page_cases()
     elif choice == "🔍 Live prediction":
         page_live_prediction()
-    elif choice == "🎥 Media & appointment":
+    elif choice == "🎥 Media and appointment":
         page_media()
     elif choice == "👥 Team":
         page_team()
 
-
 if __name__ == "__main__":
     main()
+
+
