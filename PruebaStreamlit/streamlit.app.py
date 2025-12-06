@@ -548,27 +548,7 @@ def page_live_prediction():
 
 def page_media():
     st.header("🎥 Visual demo and appointment")
-
-    st.subheader("Sample images")
-
-    try:
-        img_local = Image.open("imagen.png")
-        st.image(img_local, caption="Local sample image", use_column_width=True)
-    except Exception:
-        st.info("Place an image named `imagen.png` next to `app.py` or change the path.")
-
-    st.image(
-        "https://picsum.photos/1280",
-        caption="Sample image from URL",
-        use_column_width=True
-    )
-
-    st.caption(
-        "The images shown here are generic examples. In a real educational or clinical "
-        "setting, you would use curated MRI cases that have been anonymized and approved "
-        "for teaching or demonstration purposes."
-    )
-
+    
     st.subheader("Demo video of the app / model")
     try:
         with open("video.mp4", "rb") as video_file:
@@ -728,5 +708,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
