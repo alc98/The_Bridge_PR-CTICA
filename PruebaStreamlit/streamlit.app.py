@@ -598,7 +598,7 @@ def page_contribute():
         """
     )
 
-    # 🔽 Sección de cita (ya no se llama simulación) e incluye logo + enlace
+    # 🗓️ Bloque de cita con la asociación dentro
     st.subheader("📅 Follow-up appointment")
 
     cita = st.date_input(
@@ -606,9 +606,8 @@ def page_contribute():
         datetime.date.today(),
         key="contribute_date"
     )
-    st.success(f"Selected date: {cita.strftime('%d/%m/%Y')}")
 
-    # Logo clicable de la AECC dentro de la sección de cita
+    # Logo clicable de la AECC dentro del bloque de cita
     aecc_logo_url = "https://www.aecc.es/sites/default/files/styles/ps_xl/public/logo-aecc.png"
     st.markdown(
         f"""
@@ -622,13 +621,14 @@ def page_contribute():
     st.markdown(
         """
         By clicking on the logo, you will be redirected to the official website of the
-        Spanish Association Against Cancer, where you can learn more about how to:
+        Spanish Association Against Cancer, where you can:
+        - Request information and support for you or your family.
         - Collaborate as a donor or volunteer.
-        - Support patients and their families.
-        - Promote prevention and early detection.
+        - Learn more about prevention and early detection.
         - Help fund cutting-edge cancer research projects.
         """
     )
+
 
 
 
@@ -767,6 +767,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
