@@ -61,6 +61,15 @@ def decode_mask_from_b64(mask_b64: str) -> np.ndarray:
 def page_intro():
     st.header("🧠 Brain tumor detection and segmentation")
 
+     st.error(
+        "June 8, 2023 – International Brain Tumor Day\n\n"
+        "- Around 80% of people living with a brain tumor require neurorehabilitation.\n"
+        "- In Spain, more than 5,000 new brain tumor cases are diagnosed every year.\n"
+        "- Brain tumors account for approximately 2% of all cancers diagnosed in adults and 15% of those diagnosed in children.\n"
+        "- About 80% of patients will present cognitive dysfunction, and 78% will present motor dysfunction.\n"
+        "- Therapeutic exercise can reduce cancer-related mortality by up to 59%."
+    )
+
     if logo is not None:
         st.image(logo, width=120)
 
@@ -642,6 +651,39 @@ def page_team():
         """
     )
 
+    for row_start in range(0, len(team), 3):
+        cols = st.columns(3)
+        for col, member in zip(cols, team[row_start:row_start + 3]):
+            with col:
+                st.markdown("### " + member["name"])
+                try:
+                    img = Image.open(member["photo"])
+                    st.image(img, use_column_width=True, caption=member["role"])
+                except Exception:
+                    st.info(f"Photo not found: `{member['photo']}`")
+
+                st.markdown(
+                    f"[🌐 GitHub]({member['github']})",
+                    unsafe_allow_html=True
+                )
+
+    # Real project members, ordered as requested
+    st.markdown("## GitHub profiles (real project members)")
+
+    project_members = [
+        
+        {"name": "Luna Pérez", "github": "https://github.com/LunaPerezT"},
+        {"name": "Raquel Hernández", "github": "https://github.com/RaquelH18"},
+        {"name": "Mari Marcos Marín", "github": "https://github.com/mmarin3011-cloud"},
+        {"name": "Fabián G. Martín", "github": "https://github.com/FabsGMartin"},
+        {"name": "Miguel J. de la Torre", "github": "https://github.com/migueljdlt"},
+        
+        {"name": "Alejandro C.", "github": "https://github.com/alc98"},
+    ]
+
+    for member in project_members:
+        st.markdown(f"- [{member['name']}]({member['github']})")
+
 def main():
     st.title("Brain MRI Tumor – Demo Streamlit")
 
@@ -691,5 +733,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
