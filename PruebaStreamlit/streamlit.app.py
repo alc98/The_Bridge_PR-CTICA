@@ -570,6 +570,31 @@ def page_contribute():
         If you would like to support patients and research related to brain tumors
         and cancer in general, you can contribute through the  
         **Asociación Española Contra el Cáncer (AECC)**.
+        
+        The AECC is a non-profit organization that has been working for decades across
+        Spain to **reduce the impact of cancer on society**. Its activity is based on
+        three main pillars:
+        
+        - **Support for patients and families**: emotional, psychological and social care,
+          guidance on practical aspects (work, benefits, legal issues) and accompaniment
+          throughout the disease.
+        - **Prevention and health education**: awareness campaigns about risk factors,
+          promotion of healthy lifestyles and early detection programs.
+        - **Funding of research**: competitive grants to research groups in oncology to
+          improve diagnosis, treatment and survival.
+        """
+    )
+
+    st.markdown(
+        """
+        In practice, the AECC acts through a network of local offices, hospitals and
+        volunteer programs. They offer:
+        
+        - Free **psycho-oncological support** for patients and relatives.
+        - **Social workers** who help manage administrative procedures and resources.
+        - **Telephone and online helplines** to answer questions and provide guidance.
+        - Collaboration with hospitals and research centers to drive **clinical and
+          translational research**.
         """
     )
 
@@ -591,12 +616,14 @@ def page_contribute():
         - Collaborate as a donor or volunteer.
         - Support patients and their families.
         - Promote prevention and early detection.
+        - Help fund cutting-edge cancer research projects.
         """
     )
 
     st.subheader("📅 Appointment simulation")
     cita = st.date_input("Select a date for the follow-up visit", datetime.date.today(), key="contribute_date")
     st.success(f"Selected date: {cita.strftime('%d/%m/%Y')}")
+
 
 def page_team():
     st.header("👥 Project team")
@@ -733,6 +760,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
