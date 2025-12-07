@@ -60,7 +60,8 @@ def decode_mask_from_b64(mask_b64: str) -> np.ndarray:
 
 def page_intro():
     st.header("🧠 Brain tumor detection and segmentation")
-        st.subheader("📂 Upload MRI (DICOM)")
+    
+    st.subheader("📂 Upload MRI (DICOM)")
     uploaded_file = st.file_uploader("Upload DICOM file", type=["dcm"], key="intro_dicom")
 
     if uploaded_file is not None:
@@ -790,6 +791,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
