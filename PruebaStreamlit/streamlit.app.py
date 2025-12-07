@@ -599,7 +599,6 @@ def page_team():
         """
     )
 
-    # TEAM con nombres + GitHub, sin roles
     team = [
         {
             "name": "Luna Pérez",
@@ -633,23 +632,18 @@ def page_team():
         },
     ]
 
-    # Grid (se muestra solo una vez)
+    # Grid de 2 filas x 3 columnas, con GitHub justo debajo del nombre
     for row_start in range(0, len(team), 3):
         cols = st.columns(3)
         for col, member in zip(cols, team[row_start:row_start + 3]):
             with col:
                 st.markdown("### " + member["name"])
+                st.markdown(f"**GitHub:** [{member['github']}]({member['github']})")
                 try:
                     img = Image.open(member["photo"])
-                    # caption ahora es el nombre, sin roles
                     st.image(img, use_column_width=True, caption=member["name"])
                 except Exception:
                     st.info(f"Photo not found: `{member['photo']}`")
-
-                st.markdown(
-                    f"[🌐 GitHub]({member['github']})",
-                    unsafe_allow_html=True
-                )
 
     st.info(
         """
@@ -659,22 +653,6 @@ def page_team():
         approval as a medical device.
         """
     )
-
-    # Lista de GitHub en texto (opcional pero ya que la tenías, la mantenemos)
-    st.markdown("## GitHub profiles (real project members)")
-
-    project_members = [
-        {"name": "Luna Pérez", "github": "https://github.com/LunaPerezT"},
-        {"name": "Raquel Hernández", "github": "https://github.com/RaquelH18"},
-        {"name": "Marcos Marín", "github": "https://github.com/mmarin3011-cloud"},
-        {"name": "Fabián G. Martín", "github": "https://github.com/FabsGMartin"},
-        {"name": "Miguel J. de la Torre", "github": "https://github.com/migueljdlt"},
-        {"name": "Alejandro C.", "github": "https://github.com/alc98"},
-    ]
-
-    for member in project_members:
-        st.markdown(f"- [{member['name']}]({member['github']})")
-
 
 
 def main():
@@ -726,6 +704,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
