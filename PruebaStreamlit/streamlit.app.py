@@ -587,7 +587,7 @@ def page_team():
         """
     )
 
-   def page_team():
+def page_team():
     st.header("👥 Project team")
 
     st.markdown(
@@ -599,45 +599,41 @@ def page_team():
         """
     )
 
+    # TEAM con nombres + GitHub, sin roles
     team = [
         {
             "name": "Luna Pérez",
-            "role": "ML Engineer",
             "github": "https://github.com/LunaPerezT",
             "photo": "images/team/miembro1.jpg"
         },
         {
             "name": "Raquel Hernández",
-            "role": "Backend Developer",
             "github": "https://github.com/RaquelH18",
             "photo": "images/team/miembro2.jpg"
         },
         {
             "name": "Marcos Marín",
-            "role": "Data Scientist",
             "github": "https://github.com/mmarin3011-cloud",
             "photo": "images/team/miembro3.jpg"
         },
         {
             "name": "Fabián G. Martín",
-            "role": "MLOps & Cloud",
             "github": "https://github.com/FabsGMartin",
             "photo": "images/team/miembro4.jpg"
         },
         {
             "name": "Miguel J. de la Torre",
-            "role": "Frontend & UX",
             "github": "https://github.com/migueljdlt",
             "photo": "images/team/miembro5.jpg"
         },
         {
             "name": "Alejandro C.",
-            "role": "Data Engineer",
             "github": "https://github.com/alc98",
             "photo": "images/team/miembro6.jpg"
         },
     ]
 
+    # Grid (se muestra solo una vez)
     for row_start in range(0, len(team), 3):
         cols = st.columns(3)
         for col, member in zip(cols, team[row_start:row_start + 3]):
@@ -645,7 +641,8 @@ def page_team():
                 st.markdown("### " + member["name"])
                 try:
                     img = Image.open(member["photo"])
-                    st.image(img, use_column_width=True, caption=member["role"])
+                    # caption ahora es el nombre, sin roles
+                    st.image(img, use_column_width=True, caption=member["name"])
                 except Exception:
                     st.info(f"Photo not found: `{member['photo']}`")
 
@@ -663,25 +660,21 @@ def page_team():
         """
     )
 
-    for row_start in range(0, len(team), 3):
-        cols = st.columns(3)
-        for col, member in zip(cols, team[row_start:row_start + 3]):
-            with col:
-                st.markdown("### " + member["name"])
-                try:
-                    img = Image.open(member["photo"])
-                    st.image(img, use_column_width=True, caption=member["role"])
-                except Exception:
-                    st.info(f"Photo not found: `{member['photo']}`")
+    # Lista de GitHub en texto (opcional pero ya que la tenías, la mantenemos)
+    st.markdown("## GitHub profiles (real project members)")
 
-                st.markdown(
-                    f"[🌐 GitHub]({member['github']})",
-                    unsafe_allow_html=True
-                )
-
+    project_members = [
+        {"name": "Luna Pérez", "github": "https://github.com/LunaPerezT"},
+        {"name": "Raquel Hernández", "github": "https://github.com/RaquelH18"},
+        {"name": "Marcos Marín", "github": "https://github.com/mmarin3011-cloud"},
+        {"name": "Fabián G. Martín", "github": "https://github.com/FabsGMartin"},
+        {"name": "Miguel J. de la Torre", "github": "https://github.com/migueljdlt"},
+        {"name": "Alejandro C.", "github": "https://github.com/alc98"},
+    ]
 
     for member in project_members:
         st.markdown(f"- [{member['name']}]({member['github']})")
+
 
 
 def main():
@@ -733,6 +726,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
