@@ -60,7 +60,30 @@ def decode_mask_from_b64(mask_b64: str) -> np.ndarray:
 
 def page_intro():
     st.header("🧠 Brain tumor detection and segmentation")
-    
+        st.subheader("📂 Upload MRI (DICOM)")
+    uploaded_file = st.file_uploader("Upload DICOM file", type=["dcm"], key="intro_dicom")
+
+    if uploaded_file is not None:
+        try:
+            ds = pydicom.dcmread(uploaded_file)
+            img = ds.pixel_array  # numpy array (2D o 3D)
+
+            # Si es 2D:
+            if img.ndim == 2:
+                st.image(img, caption="DICOM slice", use_column_width=True)
+
+            # Si es 3D (volumen), mostramos la slice central
+            elif img.ndim == 3:
+                slice_idx = img.shape[0] // 2
+                st.image(
+                    img[slice_idx, :, :],
+                    caption=f"DICOM volume – central slice (index {slice_idx})",
+                    use_column_width=True
+                )
+            else:
+                st.info("This DICOM has an unsupported number of dimensions.")
+        except Exception as e:
+            st.error(f"Could not read DICOM file: {e}")
     st.error(
         "- Around 80% of people living with a brain tumor require neurorehabilitation.\n"
         "- In Spain, more than 5,000 new brain tumor cases are diagnosed every year.\n"
@@ -767,6 +790,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
