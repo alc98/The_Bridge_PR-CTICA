@@ -66,7 +66,7 @@ def page_intro():
 
     # 👇 Imagen MRI aleatoria en cada recarga de la página
     if MRI_IMAGE_URLS:
-        random_mri_url = random.choice(https://www.google.com/search?sca_esv=cf532ca25eec4427&rlz=1C1GCEA_enES1181ES1182&sxsrf=AE3TifMJpys0Cq81Wo9zZnsIpY6htD1UOA:1765140912163&udm=2&fbs=AIIjpHx4nJjfGojPVHhEACUHPiMQht6_BFq6vBIoFFRK7qchKEWEvuc0Hbw31oEI7c8o3y4MyqtV5m4rLCGDMco7dQbsn3LCPjOfwb34Pr7sZ7pnaklr1M-5WsAkNoQU77OJo12_JDSjulXiJyCA1SW8opS8_azZs2Zic6WTr_dOky2kIsswEJ_6zeeB5OV0JCkwq4ArJ99t&q=mri+images+url&sa=X&ved=2ahUKEwjS-bCorqyRAxW-9gIHHYYSNwcQtKgLegQIFxAB&biw=1396&bih=632&dpr=1.38)
+        random_mri_url = random.choice(https://www.shutterstock.com/es/video/clip-3454764223-vertical-footage-doctor-examining-mri-ct-scan)
         st.image(random_mri_url, caption="Example brain MRI", use_column_width=True)
 
     st.error(
@@ -768,6 +768,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
