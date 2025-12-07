@@ -598,7 +598,17 @@ def page_contribute():
         """
     )
 
-    # Logo clicable de la AECC (se puede ajustar la URL del logo si la cambian)
+    # 🔽 Sección de cita (ya no se llama simulación) e incluye logo + enlace
+    st.subheader("📅 Follow-up appointment")
+
+    cita = st.date_input(
+        "Select a date for the follow-up visit",
+        datetime.date.today(),
+        key="contribute_date"
+    )
+    st.success(f"Selected date: {cita.strftime('%d/%m/%Y')}")
+
+    # Logo clicable de la AECC dentro de la sección de cita
     aecc_logo_url = "https://www.aecc.es/sites/default/files/styles/ps_xl/public/logo-aecc.png"
     st.markdown(
         f"""
@@ -620,9 +630,6 @@ def page_contribute():
         """
     )
 
-    st.subheader("📅 Appointment simulation")
-    cita = st.date_input("Select a date for the follow-up visit", datetime.date.today(), key="contribute_date")
-    st.success(f"Selected date: {cita.strftime('%d/%m/%Y')}")
 
 
 def page_team():
@@ -760,6 +767,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
