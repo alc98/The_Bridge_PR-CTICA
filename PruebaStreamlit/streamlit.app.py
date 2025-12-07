@@ -60,15 +60,7 @@ def decode_mask_from_b64(mask_b64: str) -> np.ndarray:
 
 def page_intro():
     st.header("🧠 Brain tumor detection and segmentation")
-
-    if logo is not None:
-        st.image(logo, width=120)
-
-    # 👇 Imagen MRI aleatoria en cada recarga de la página
-    if MRI_IMAGE_URLS:
-        random_mri_url = random.choice(https://www.shutterstock.com/es/video/clip-3454764223-vertical-footage-doctor-examining-mri-ct-scan)
-        st.image(random_mri_url, caption="Example brain MRI", use_column_width=True)
-
+    
     st.error(
         "- Around 80% of people living with a brain tumor require neurorehabilitation.\n"
         "- In Spain, more than 5,000 new brain tumor cases are diagnosed every year.\n"
@@ -768,6 +760,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
