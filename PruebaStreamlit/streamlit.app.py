@@ -679,7 +679,7 @@ def page_team():
             "photo": "images/team/miembro2.jpg"
         },
         {
-            "name": "Marcos Marín",
+            "name": "Mary Marcos Marín",
             "github": "https://github.com/mmarin3011-cloud",
             "photo": "images/team/miembro3.jpg"
         },
@@ -767,6 +767,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
