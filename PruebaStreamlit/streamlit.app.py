@@ -62,7 +62,6 @@ def page_intro():
     st.header("🧠 Brain tumor detection and segmentation")
 
     st.error(
-        "June 8, 2023 – International Brain Tumor Day\n\n"
         "- Around 80% of people living with a brain tumor require neurorehabilitation.\n"
         "- In Spain, more than 5,000 new brain tumor cases are diagnosed every year.\n"
         "- Brain tumors account for approximately 2% of all cancers diagnosed in adults and 15% of those diagnosed in children.\n"
@@ -560,8 +559,43 @@ def page_media():
         """
     )
 
+def page_contribute():
+    st.header("🤝 Contribute and support patients")
+
+    # Mensaje en verde
+    st.success("June 8, 2023 – International Brain Tumor Day\n\n")
+
+    st.markdown(
+        """
+        If you would like to support patients and research related to brain tumors
+        and cancer in general, you can contribute through the  
+        **Asociación Española Contra el Cáncer (AECC)**.
+        """
+    )
+
+    # Logo clicable de la AECC (se puede ajustar la URL del logo si la cambian)
+    aecc_logo_url = "https://www.aecc.es/sites/default/files/styles/ps_xl/public/logo-aecc.png"
+    st.markdown(
+        f"""
+        <a href="https://www.aecc.es/" target="_blank">
+            <img src="{aecc_logo_url}" alt="AECC" width="260">
+        </a>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    st.markdown(
+        """
+        By clicking on the logo, you will be redirected to the official website of the
+        Spanish Association Against Cancer, where you can learn more about how to:
+        - Collaborate as a donor or volunteer.
+        - Support patients and their families.
+        - Promote prevention and early detection.
+        """
+    )
+
     st.subheader("📅 Appointment simulation")
-    cita = st.date_input("Select a date for the follow-up visit", datetime.date.today())
+    cita = st.date_input("Select a date for the follow-up visit", datetime.date.today(), key="contribute_date")
     st.success(f"Selected date: {cita.strftime('%d/%m/%Y')}")
 
 def page_team():
@@ -667,14 +701,6 @@ def main():
     st.sidebar.header("Navigation")
     st.sidebar.caption("Choose a section to explore the project.")
 
-    st.markdown(
-        """
-        _Educational disclaimer_: this application is intended **only for learning and
-        experimentation in data science and medical imaging**. It must not be used to
-        make or support real diagnostic or therapeutic decisions for patients.
-        """
-    )
-
     menu = [
         "🏠 Introduction",
         "🧬 Deep learning model",
@@ -682,6 +708,7 @@ def main():
         "🖼️ Example cases",
         "🔍 Live prediction",
         "🎥 Media and appointment",
+        "🤝 Contribute",
         "👥 Team"
     ]
 
@@ -699,6 +726,8 @@ def main():
         page_live_prediction()
     elif choice == "🎥 Media and appointment":
         page_media()
+    elif choice == "🤝 Contribute":
+        page_contribute()
     elif choice == "👥 Team":
         page_team()
 
