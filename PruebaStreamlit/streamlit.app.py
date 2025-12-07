@@ -587,41 +587,53 @@ def page_team():
         """
     )
 
+   def page_team():
+    st.header("👥 Project team")
+
+    st.markdown(
+        """
+        This work has been developed by a multidisciplinary team of students
+        in Data Science and backend development.  
+        
+        Below you can see our profiles and GitHub links.
+        """
+    )
+
     team = [
         {
-            "name": "Nombre 1",
+            "name": "Luna Pérez",
             "role": "ML Engineer",
-            "github": "https://github.com/usuario1",
+            "github": "https://github.com/LunaPerezT",
             "photo": "images/team/miembro1.jpg"
         },
         {
-            "name": "Nombre 2",
+            "name": "Raquel Hernández",
             "role": "Backend Developer",
-            "github": "https://github.com/usuario2",
+            "github": "https://github.com/RaquelH18",
             "photo": "images/team/miembro2.jpg"
         },
         {
-            "name": "Nombre 3",
+            "name": "Marcos Marín",
             "role": "Data Scientist",
-            "github": "https://github.com/usuario3",
+            "github": "https://github.com/mmarin3011-cloud",
             "photo": "images/team/miembro3.jpg"
         },
         {
-            "name": "Nombre 4",
+            "name": "Fabián G. Martín",
             "role": "MLOps & Cloud",
-            "github": "https://github.com/usuario4",
+            "github": "https://github.com/FabsGMartin",
             "photo": "images/team/miembro4.jpg"
         },
         {
-            "name": "Nombre 5",
+            "name": "Miguel J. de la Torre",
             "role": "Frontend & UX",
-            "github": "https://github.com/usuario5",
+            "github": "https://github.com/migueljdlt",
             "photo": "images/team/miembro5.jpg"
         },
         {
-            "name": "Nombre 6",
+            "name": "Alejandro C.",
             "role": "Data Engineer",
-            "github": "https://github.com/usuario6",
+            "github": "https://github.com/alc98",
             "photo": "images/team/miembro6.jpg"
         },
     ]
@@ -667,22 +679,10 @@ def page_team():
                     unsafe_allow_html=True
                 )
 
-    # Real project members, ordered as requested
-    st.markdown("## GitHub profiles (real project members)")
-
-    project_members = [
-        
-        {"name": "Luna Pérez", "github": "https://github.com/LunaPerezT"},
-        {"name": "Raquel Hernández", "github": "https://github.com/RaquelH18"},
-        {"name": "Mari Marcos Marín", "github": "https://github.com/mmarin3011-cloud"},
-        {"name": "Fabián G. Martín", "github": "https://github.com/FabsGMartin"},
-        {"name": "Miguel J. de la Torre", "github": "https://github.com/migueljdlt"},
-        
-        {"name": "Alejandro C.", "github": "https://github.com/alc98"},
-    ]
 
     for member in project_members:
         st.markdown(f"- [{member['name']}]({member['github']})")
+
 
 def main():
     st.title("Brain MRI Tumor – Demo Streamlit")
@@ -733,6 +733,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
