@@ -7,6 +7,9 @@ import requests
 import base64
 import io
 import numpy as np
+import random
+from pathlib import Path
+from PIL import Image
 
 try:
     logo = Image.open("logo.png")
@@ -301,84 +304,116 @@ def page_model():
 
 
 
-def page_cases():
-    st.header("🖼️ Example cases: negative vs positive")
-
-    st.markdown(
-        "In this section we show an example patient **without tumor** (negative case) "
-        "and a patient **with tumor** (positive case), together with their segmentation masks."
-    )
+def page_cases(): 
+    st.header("🖼️ Ejemplos de cáncer cerebral en RM")
 
     st.markdown(
         """
-        In daily practice, neuroradiologists do not only answer “tumor yes/no”.
-        They carefully assess:
-        - **Location** of the lesion (e.g. frontal vs temporal lobe) and involvement of
-          eloquent areas (motor, language).
-        - **Mass effect and midline shift**, which indicate how much the lesion compresses
-          surrounding structures.
-        - **Edema and infiltration** patterns, often best seen on FLAIR.
-        - **Contrast enhancement** behavior, which can suggest high-grade components
-          or breakdown of the blood-brain barrier.
-        These qualitative descriptors, combined with clinical data, guide biopsy, surgery
-        and follow-up strategy.
+        En esta sección mostramos ejemplos de **tumor cerebral** en cortes de
+        resonancia magnética (RM), junto con sus **máscaras de segmentación**.
+
+        En la práctica clínica, el objetivo no es solo decir “tumor sí/no”, sino valorar:
+        - **Localización** del tumor (lóbulos frontal, temporal, parietal…).
+        - **Efecto masa y desplazamiento de la línea media**.
+        - **Edema e infiltración** del tejido adyacente.
+        - **Patrón de realce con contraste**, que orienta sobre la agresividad del tumor.
+
+        Estos elementos, combinados con la clínica del paciente, guían decisiones
+        como biopsia, cirugía y seguimiento.
         """
     )
 
-    neg_img_path = "PruebaStreamlit/Imagen/images (1).jpg"
-    neg_mask_path = "PruebaStreamlit/Imagen/Captura de pantalla 2025-12-08 181748.png"
-    pos_img_path = "images/caso_positivo_mri.png"
-    pos_mask_path = "images/caso_positivo_mask.png"
+    # ------------------------------------------------------------------
+    # EJEMPLO FIJO NEGATIVO / POSITIVO (puedes cambiar las rutas)
+    # ------------------------------------------------------------------
+    neg_img_path = "Imagen/images (1).jpg"   # MRI sin tumor
+    neg_mask_path = "Imagen/negativo_mask.png"
+    pos_img_path = "Imagen/positivo_mri.png"
+    pos_mask_path = "Imagen/positivo_mask.png"
 
-
-    st.markdown("### Negative case (no tumor)")
+    st.markdown("### Caso negativo (sin tumor cerebral)")
     col1, col2 = st.columns(2)
 
     with col1:
-        st.caption("MRI – negative case")
+        st.caption("RM cerebral – caso negativo")
         try:
             neg_img = Image.open(neg_img_path)
             st.image(neg_img, use_column_width=True)
         except Exception:
-            st.info(f"Place the negative case image at `{neg_img_path}`.")
+            st.info(f"Coloca la imagen del caso negativo en `{neg_img_path}`.")
 
     with col2:
-        st.caption("Mask – negative case (no tumor)")
+        st.caption("Máscara – caso negativo (sin tumor)")
         try:
             neg_mask = Image.open(neg_mask_path)
             st.image(neg_mask, use_column_width=True)
         except Exception:
-            st.info(f"Place the negative case mask at `{neg_mask_path}`.")
+            st.info(f"Coloca la máscara del caso negativo en `{neg_mask_path}`.")
 
     st.markdown("---")
-    st.markdown("### Positive case (with tumor)")
+    st.markdown("### Caso positivo (con tumor cerebral)")
     col3, col4 = st.columns(2)
 
     with col3:
-        st.caption("MRI – positive case")
+        st.caption("RM cerebral – caso positivo")
         try:
             pos_img = Image.open(pos_img_path)
             st.image(pos_img, use_column_width=True)
         except Exception:
-            st.info(f"Place the positive case image at `{pos_img_path}`.")
+            st.info(f"Coloca la imagen del caso positivo en `{pos_img_path}`.")
 
     with col4:
-        st.caption("Mask – positive case (tumor in red)")
+        st.caption("Máscara – caso positivo (tumor en blanco)")
         try:
             pos_mask = Image.open(pos_mask_path)
             st.image(pos_mask, use_column_width=True)
         except Exception:
-            st.info(f"Place the positive case mask at `{pos_mask_path}`.")
+            st.info(f"Coloca la máscara del caso positivo en `{pos_mask_path}`.")
 
     st.info(
         """
-        The visual examples here are based on single 2D slices. Real-world decisions
-        are based on full 3D studies and multiple MRI sequences, as well as clinical
-        information. The goal of this demo is educational: to illustrate how a model
-        can highlight suspicious regions and complement expert image interpretation.
+        Estos ejemplos corresponden a cortes 2D individuales. En la realidad se revisa
+        todo el estudio 3D y varias secuencias (T1, T2, FLAIR, contraste), junto con
+        la historia clínica del paciente.
         """
     )
 
+    # ------------------------------------------------------------------
+    # VISOR ALEATORIO DE FILAS (row_01.png, row_02.png, ...)
+    # ------------------------------------------------------------------
+    st.markdown("---")
+    st.markdown("### 🎲 Explorador aleatorio de casos")
+
+    st.markdown(
+        "Aquí puedes ver, de forma aleatoria, una fila completa de ejemplos "
+        "(**RM**, **máscara** y **RM + máscara**) obtenidos del dataset."
+    )
+
+    # Carpeta donde has guardado las filas recortadas:
+    # pon ahí tus row_01.png, row_02.png, ... (ajusta si las tienes en otro sitio)
+    rows_dir = Path("Imagen/rows")   # <-- CAMBIA si las tienes en otra carpeta
+    row_paths = sorted(rows_dir.glob("row_*.png"))
+
+    if not row_paths:
+        st.info(
+            "No se han encontrado imágenes `row_*.png` en "
+            f"`{rows_dir}`. Copia allí tus filas (row_01.png, row_02.png, ...)."
+        )
+        return
+
+    # Estado para recordar qué fila se está mostrando
+    if "random_row_idx" not in st.session_state:
+        st.session_state.random_row_idx = 0
+
+    if st.button("🔀 Mostrar otro caso aleatorio"):
+        st.session_state.random_row_idx = random.randrange(len(row_paths))
+
+    current_idx = st.session_state.random_row_idx
+    current_path = row_paths[current_idx]
+
+    st.caption(f"Caso aleatorio {current_idx + 1} de {len(row_paths)}")
+    st.image(str(current_path), use_column_width=True)
+    
 def page_live_prediction():
     st.header("🔍 Live prediction with Flask model")
 
@@ -721,6 +756,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
