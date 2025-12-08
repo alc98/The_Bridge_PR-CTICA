@@ -392,13 +392,26 @@ def page_live_prediction():
 
         if st.button("Analyze MRI"):
             with st.spinner("Querying Flask model..."):
+                # 1️⃣ Intento con la API principal por HTTP
                 try:
                     response = call_flask_model(api_url, pil_img)
-                except Exception as e:
-                    st.error(f"Error calling the API: {e}")
-                    return
+                    used_backup = False
+                except Exception as e_main:
+                    st.error(f"Error calling main Flask API ({api_url}): {e_main}")
+                    st.info("Trying backup local Flask app (.app) instead...")
+
+                    # 2️⃣ Intento con el backup Flask local (.app)
+                    try:
+                        response = call_flask_model_backup(pil_img)
+                        used_backup = True
+                    except Exception as e_backup:
+                        st.error(f"Backup Flask app (.app) also failed: {e_backup}")
+                        return
 
             st.markdown("### Model result")
+
+            if 'used_backup' in locals() and used_backup:
+                st.caption("Result obtained from backup Flask app (.app).")
 
             has_tumor = response.get("has_tumor", None)
             prob = response.get("probability", None)
@@ -445,6 +458,7 @@ def page_live_prediction():
                     "features (radiomics), which can be correlated with prognosis or molecular "
                     "subtypes in research studies."
                 )
+
 
 def page_media():
     st.header("🎥 Visual demo and appointment")
@@ -675,6 +689,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
