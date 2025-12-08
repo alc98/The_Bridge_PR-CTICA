@@ -37,7 +37,6 @@ TUMOR_COL = "Tumor"
 
 def call_flask_model(api_url: str, pil_image: Image.Image):
     pil_image = pil_image.convert("RGB")
-
     buf = io.BytesIO()
     pil_image.save(buf, format="PNG")
     img_bytes = buf.getvalue()
@@ -52,6 +51,39 @@ def call_flask_model(api_url: str, pil_image: Image.Image):
     )
     resp.raise_for_status()
     return resp.json()
+
+# 👇 AQUÍ PEGAS ESTO
+try:
+    from flask_app import app as backup_flask_app  # ajusta flask_app al nombre real
+except Exception:
+    backup_flask_app = None
+
+
+def call_flask_model_backup(pil_image: Image.Image):
+    if backup_flask_app is None:
+        raise RuntimeError("Backup Flask app (.app) is not available or could not be imported.")
+
+    pil_image = pil_image.convert("RGB")
+    buf = io.BytesIO()
+    pil_image.save(buf, format="PNG")
+    img_bytes = buf.getvalue()
+    img_b64 = base64.b64encode(img_bytes).decode("utf-8")
+
+    with backup_flask_app.test_client() as client:
+        resp = client.post(
+            "/predict",
+            json={"image_base64": img_b64}
+        )
+
+        if resp.status_code != 200:
+            raise RuntimeError(
+                f"Backup Flask app (.app) returned status {resp.status_code}: {resp.data!r}"
+            )
+
+        data = resp.get_json()
+        if data is None:
+            raise RuntimeError("Backup Flask app (.app) did not return valid JSON.")
+        return data
 
 def decode_mask_from_b64(mask_b64: str) -> np.ndarray:
     mask_bytes = base64.b64decode(mask_b64)
@@ -392,7 +424,7 @@ def page_live_prediction():
 
         if st.button("Analyze MRI"):
             with st.spinner("Querying Flask model..."):
-                # 1️⃣ Intento con la API principal por HTTP
+              
                 try:
                     response = call_flask_model(api_url, pil_img)
                     used_backup = False
@@ -400,7 +432,7 @@ def page_live_prediction():
                     st.error(f"Error calling main Flask API ({api_url}): {e_main}")
                     st.info("Trying backup local Flask app (.app) instead...")
 
-                    # 2️⃣ Intento con el backup Flask local (.app)
+             
                     try:
                         response = call_flask_model_backup(pil_img)
                         used_backup = True
@@ -689,6 +721,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
