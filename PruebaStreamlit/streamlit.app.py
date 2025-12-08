@@ -317,7 +317,7 @@ def page_cases():
 
     st.markdown(
         """
-        Aquí mostramos cortes de **resonancia magnética cerebral** con **tumores segmentados**.
+        Aquí mostramos cortes de **resonancia magnética cerebral** con y sin **tumor segmentado**.
         En cada fila se ven, de izquierda a derecha:
 
         1. **RM original**  
@@ -326,13 +326,13 @@ def page_cases():
         """
     )
 
-    # ------------------------------
-    # VISOR ALEATORIO DE FILAS row_XX
-    # ------------------------------
+    # =========================
+    # Cargar filas row_XX.png
+    # =========================
     rows_dir = IMAGES_DIR
-    row_paths = sorted(rows_dir.glob("row_*.png"))
+    all_rows = sorted(rows_dir.glob("row_*.png"))
 
-    if not row_paths:
+    if not all_rows:
         st.error(
             "No se han encontrado imágenes `row_*.png` en la carpeta "
             f"`{rows_dir}`.\n\n"
@@ -340,31 +340,76 @@ def page_cases():
         )
         return
 
-    if "random_row_idx" not in st.session_state:
-        st.session_state.random_row_idx = 0
+    # Separar casos CON tumor (row_01..row_12) y SIN tumor (row_13..)
+    tumor_rows = []
+    no_tumor_rows = []
+    for p in all_rows:
+        stem = p.stem  # "row_01"
+        try:
+            idx = int(stem.split("_")[-1])
+        except ValueError:
+            continue
+        if idx <= 12:
+            tumor_rows.append(p)
+        else:
+            no_tumor_rows.append(p)
 
-    # ==== CONTENEDOR CENTRAL ====
+    # =========================
+    # Contenedor central
+    # =========================
     left_empty, center, right_empty = st.columns([1, 4, 1])
     with center:
         st.markdown("<br>", unsafe_allow_html=True)
 
+        # Selector: con tumor / sin tumor
+        tipo = st.radio(
+            "Selecciona tipo de caso",
+            ("🔴 Con tumor", "🟢 Sin tumor"),
+            horizontal=True,
+        )
+
+        if tipo == "🔴 Con tumor":
+            active_rows = tumor_rows
+            state_key = "random_row_idx_tumor"
+            boton_texto = "🔀 Mostrar otro caso con tumor"
+            titulo_prefix = "Caso"
+            subtitulo_suffix = "tumor cerebral segmentado"
+        else:
+            active_rows = no_tumor_rows
+            state_key = "random_row_idx_no_tumor"
+            boton_texto = "🔀 Mostrar otro caso sano"
+            titulo_prefix = "Caso sano"
+            subtitulo_suffix = "RM sin tumor visible"
+
+        if not active_rows:
+            st.warning(
+                "No hay filas disponibles para este tipo de caso.\n\n"
+                "Para **con tumor** espera encontrar `row_01.png`–`row_12.png`.\n"
+                "Para **sin tumor** añade `row_13.png`, `row_14.png`, ..."
+            )
+            return
+
+        # Índice en session_state separado para cada tipo
+        if state_key not in st.session_state:
+            st.session_state[state_key] = 0
+
         # Botón centrado
         bc1, bc2, bc3 = st.columns([1, 2, 1])
         with bc2:
-            if st.button("🔀 Mostrar otro caso aleatorio"):
-                st.session_state.random_row_idx = random.randrange(len(row_paths))
+            if st.button(boton_texto):
+                st.session_state[state_key] = random.randrange(len(active_rows))
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        current_idx = st.session_state.random_row_idx
-        current_path = row_paths[current_idx]
+        current_idx = st.session_state[state_key]
+        current_path = active_rows[current_idx]
 
-        case_stem = current_path.stem          # "row_03"
-        case_number = case_stem.split("_")[-1] # "03"
+        case_stem = current_path.stem              # "row_03"
+        case_number = case_stem.split("_")[-1]     # "03"
 
         # Título centrado
         st.markdown(
-            f"<h3 style='text-align:center'>Caso {case_number}: tumor cerebral segmentado</h3>",
+            f"<h3 style='text-align:center'>{titulo_prefix} {case_number}: {subtitulo_suffix}</h3>",
             unsafe_allow_html=True,
         )
         st.markdown("<br>", unsafe_allow_html=True)
@@ -402,14 +447,25 @@ def page_cases():
             st.image(img_mri_mask, use_column_width=True)
 
         st.markdown("<br>", unsafe_allow_html=True)
+
+        # Nota distinta si es caso sano o con tumor
+        if tipo == "🔴 Con tumor":
+            note_text = (
+                "Nota: estos son ejemplos de cortes 2D con tumor. En la práctica se analizan "
+                "volúmenes 3D y múltiples secuencias (T1, T2, FLAIR, contraste), junto con "
+                "la historia clínica."
+            )
+        else:
+            note_text = (
+                "Nota: en estos casos no se observa tumor en el corte mostrado y la máscara "
+                "debe permanecer vacía. Compararlos con los casos con tumor ayuda a entender "
+                "qué patrones está aprendiendo el modelo."
+            )
+
         st.markdown(
-            "<p style='text-align:center; font-size:0.9rem;'>"
-            "Nota: estos son ejemplos de cortes 2D. En la práctica se analizan volúmenes 3D "
-            "y múltiples secuencias (T1, T2, FLAIR, contraste), junto con la historia clínica."
-            "</p>",
+            f"<p style='text-align:center; font-size:0.9rem;'>{note_text}</p>",
             unsafe_allow_html=True,
         )
-
 
 def page_media():
     st.header("🎥 Visual demo and appointment")
@@ -640,6 +696,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
