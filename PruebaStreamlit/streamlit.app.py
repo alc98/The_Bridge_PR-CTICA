@@ -318,21 +318,20 @@ def page_cases():
     st.markdown(
         """
         Aquí mostramos cortes de **resonancia magnética cerebral** con y sin **tumor segmentado**.
-        En cada ejemplo verás, de izquierda a derecha:
+        En cada ejemplo verás:
 
         1. **RM original**  
         2. **Máscara binaria del tumor** (blanco = tumor, negro = fondo)  
-        3. **RM con la máscara superpuesta**
+        3. **RM con la máscara superpuesta** (solo en los casos con tumor)
         """
     )
 
     rows_dir = IMAGES_DIR
 
-    # ------------------ CASOS CON TUMOR ------------------
+    # ------------------ CASOS CON TUMOR (row_*.png) ------------------
     tumor_rows = sorted(rows_dir.glob("row_*.png"))
 
-    # ------------------ CASOS SIN TUMOR ------------------
-    # tus archivos: example_no_tumor.png, example_no_tumor2.png, ...
+    # ------------------ CASOS SIN TUMOR (example_no_tumor*.png) ------------------
     no_tumor_rows = sorted(rows_dir.glob("example_no_tumor*.png"))
 
     if not tumor_rows and not no_tumor_rows:
@@ -350,11 +349,12 @@ def page_cases():
     with center:
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # Selector: con tumor / sin tumor
+        # 👉 Primero SIN tumor, luego CON tumor
         tipo = st.radio(
             "Selecciona tipo de caso",
-            ("🔴 Con tumor", "🟢 Sin tumor"),
+            ("🟢 Sin tumor", "🔴 Con tumor"),
             horizontal=True,
+            index=0,   # por defecto: Sin tumor
         )
 
         if tipo == "🔴 Con tumor":
@@ -384,7 +384,6 @@ def page_cases():
                 )
             return
 
-        # Índice en session_state separado para cada tipo
         if state_key not in st.session_state:
             st.session_state[state_key] = 0
 
@@ -399,9 +398,7 @@ def page_cases():
         current_idx = st.session_state[state_key]
         current_path = active_rows[current_idx]
 
-        # Nombre de archivo -> número de caso (si se puede)
-        stem = current_path.stem  # row_03 o example_no_tumor3
-        # intentamos sacar un número al final
+        stem = current_path.stem
         num_part = "".join(ch for ch in stem if ch.isdigit())
         case_number = num_part if num_part else "–"
 
@@ -423,35 +420,52 @@ def page_cases():
             img_mri      = img_row.crop((0,        0, col_w,   h))
             img_mask     = img_row.crop((col_w,    0, 2*col_w, h))
             img_mri_mask = img_row.crop((2*col_w,  0, w,       h))
+
+            c1, c2, c3 = st.columns(3)
+
+            with c1:
+                st.markdown(
+                    "<h5 style='text-align:center'>RM original</h5>",
+                    unsafe_allow_html=True,
+                )
+                st.image(img_mri, use_column_width=True)
+
+            with c2:
+                st.markdown(
+                    "<h5 style='text-align:center'>Máscara de tumor</h5>",
+                    unsafe_allow_html=True,
+                )
+                st.image(img_mask, use_column_width=True)
+
+            with c3:
+                st.markdown(
+                    "<h5 style='text-align:center'>RM con máscara</h5>",
+                    unsafe_allow_html=True,
+                )
+                st.image(img_mri_mask, use_column_width=True)
+
         else:
-            # imagen única de RM: generamos máscara vacía
+            # ejemplo sin tumor: una única RM -> generamos máscara negra
             img_mri = Image.open(current_path).convert("RGB")
             w, h = img_mri.size
             img_mask = Image.new("L", (w, h), color=0)  # negro
-            img_mri_mask = img_mri  # misma imagen (sin máscara)
 
-        c1, c2, c3 = st.columns(3)
+            # Solo 2 imágenes para "limpiar" la vista
+            c1, c2 = st.columns(2)
 
-        with c1:
-            st.markdown(
-                "<h5 style='text-align:center'>RM original</h5>",
-                unsafe_allow_html=True,
-            )
-            st.image(img_mri, use_column_width=True)
+            with c1:
+                st.markdown(
+                    "<h5 style='text-align:center'>RM original (sin tumor)</h5>",
+                    unsafe_allow_html=True,
+                )
+                st.image(img_mri, use_column_width=True)
 
-        with c2:
-            st.markdown(
-                "<h5 style='text-align:center'>Máscara de tumor</h5>",
-                unsafe_allow_html=True,
-            )
-            st.image(img_mask, use_column_width=True)
-
-        with c3:
-            st.markdown(
-                "<h5 style='text-align:center'>RM con máscara</h5>",
-                unsafe_allow_html=True,
-            )
-            st.image(img_mri_mask, use_column_width=True)
+            with c2:
+                st.markdown(
+                    "<h5 style='text-align:center'>Máscara (sin tumor)</h5>",
+                    unsafe_allow_html=True,
+                )
+                st.image(img_mask, use_column_width=True)
 
         st.markdown("<br>", unsafe_allow_html=True)
 
@@ -471,6 +485,7 @@ def page_cases():
             f"<p style='text-align:center; font-size:0.9rem;'>{note_text}</p>",
             unsafe_allow_html=True,
         )
+
 
 def page_media():
     st.header("🎥 Visual demo and appointment")
@@ -701,6 +716,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
