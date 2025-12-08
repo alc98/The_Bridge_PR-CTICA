@@ -444,6 +444,23 @@ def page_cases():
                 )
                 st.image(img_mri_mask, use_column_width=True)
 
+            # 🧠 Descripción clínico–analítica en inglés (con tumor)
+            st.markdown(
+                """
+                #### Clinical / data analyst interpretation (with tumor)
+
+                - **Region of interest:** a focal hyperintense lesion is visible within the brain
+                  parenchyma. The binary mask highlights all pixels classified as tumor.
+                - **Segmentation concept:** every white pixel in the mask corresponds to voxels
+                  that the model (or the manual annotation) considers part of the tumor.
+                - **Visual benefit:** the overlaid image makes it easier to appreciate tumor
+                  borders, mass effect and relationship to surrounding tissue.
+                - **From a data point of view:** this slice would be labelled as a **positive
+                  sample**, and the mask provides dense supervision for training segmentation
+                  models (Dice, IoU, pixel-wise accuracy, etc.).
+                """
+            )
+
         else:
             # ejemplo sin tumor: una única RM; la máscara está ya implícita (vacía)
             img_mri = Image.open(current_path).convert("RGB")
@@ -472,6 +489,23 @@ def page_cases():
             # En ambos casos se muestra la misma imagen, porque no hay tumor
             st.image(img_mri, use_column_width=False)
 
+            # 🧼 Descripción clínico–analítica en inglés (sin tumor)
+            st.markdown(
+                """
+                #### Clinical / data analyst interpretation (no visible tumor)
+
+                - **Overall impression:** normal-appearing brain MRI for this slice, with
+                  no focal mass, no clear edema pattern and preserved global symmetry.
+                - **Segmentation point of view:** this is a **negative sample**; the
+                  corresponding mask is empty, meaning no pixels are labelled as tumor.
+                - **Why it matters for the model:** negative cases are crucial to reduce
+                  false positives and to teach the network what healthy anatomy looks like.
+                - **Expected behavior:** the model should assign low tumor probability to
+                  all pixels in this image. Any high activation here would be a potential
+                  false positive.
+                """
+            )
+
         st.markdown("<br>", unsafe_allow_html=True)
 
         if tipo == "🔴 Con tumor":
@@ -491,7 +525,6 @@ def page_cases():
             f"<p style='text-align:center; font-size:0.9rem;'>{note_text}</p>",
             unsafe_allow_html=True,
         )
-
 
 def page_media():
     st.header("🎥 Visual demo and appointment")
@@ -722,6 +755,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
