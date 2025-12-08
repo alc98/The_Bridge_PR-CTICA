@@ -318,41 +318,30 @@ def page_cases():
     st.markdown(
         """
         Aquí mostramos cortes de **resonancia magnética cerebral** con y sin **tumor segmentado**.
-        En cada fila se ven, de izquierda a derecha:
+        En cada ejemplo verás, de izquierda a derecha:
 
         1. **RM original**  
-        2. **Máscara binaria** del tumor (blanco = tumor, negro = fondo)  
+        2. **Máscara binaria del tumor** (blanco = tumor, negro = fondo)  
         3. **RM con la máscara superpuesta**
         """
     )
 
-    # =========================
-    # Cargar filas row_XX.png
-    # =========================
     rows_dir = IMAGES_DIR
-    all_rows = sorted(rows_dir.glob("row_*.png"))
 
-    if not all_rows:
+    # ------------------ CASOS CON TUMOR ------------------
+    tumor_rows = sorted(rows_dir.glob("row_*.png"))
+
+    # ------------------ CASOS SIN TUMOR ------------------
+    # tus archivos: example_no_tumor.png, example_no_tumor2.png, ...
+    no_tumor_rows = sorted(rows_dir.glob("example_no_tumor*.png"))
+
+    if not tumor_rows and not no_tumor_rows:
         st.error(
-            "No se han encontrado imágenes `row_*.png` en la carpeta "
-            f"`{rows_dir}`.\n\n"
-            "Asegúrate de que tus archivos (row_01.png, row_02.png, ...) están ahí."
+            "No se han encontrado imágenes ni `row_*.png` (con tumor) "
+            "ni `example_no_tumor*.png` (sin tumor) en la carpeta "
+            f"`{rows_dir}`."
         )
         return
-
-    # Separar casos CON tumor (row_01..row_12) y SIN tumor (row_13..)
-    tumor_rows = []
-    no_tumor_rows = []
-    for p in all_rows:
-        stem = p.stem  # "row_01"
-        try:
-            idx = int(stem.split("_")[-1])
-        except ValueError:
-            continue
-        if idx <= 12:
-            tumor_rows.append(p)
-        else:
-            no_tumor_rows.append(p)
 
     # =========================
     # Contenedor central
@@ -382,11 +371,17 @@ def page_cases():
             subtitulo_suffix = "RM sin tumor visible"
 
         if not active_rows:
-            st.warning(
-                "No hay filas disponibles para este tipo de caso.\n\n"
-                "Para **con tumor** espera encontrar `row_01.png`–`row_12.png`.\n"
-                "Para **sin tumor** añade `row_13.png`, `row_14.png`, ..."
-            )
+            if tipo == "🔴 Con tumor":
+                st.warning(
+                    "No hay imágenes `row_*.png` para casos con tumor.\n"
+                    "Asegúrate de que `row_01.png`, `row_02.png`, ... están en la carpeta Imagen."
+                )
+            else:
+                st.warning(
+                    "No hay imágenes `example_no_tumor*.png` para casos sin tumor.\n"
+                    "Coloca archivos como `example_no_tumor.png`, "
+                    "`example_no_tumor2.png`, ... en la carpeta Imagen."
+                )
             return
 
         # Índice en session_state separado para cada tipo
@@ -404,24 +399,36 @@ def page_cases():
         current_idx = st.session_state[state_key]
         current_path = active_rows[current_idx]
 
-        case_stem = current_path.stem              # "row_03"
-        case_number = case_stem.split("_")[-1]     # "03"
+        # Nombre de archivo -> número de caso (si se puede)
+        stem = current_path.stem  # row_03 o example_no_tumor3
+        # intentamos sacar un número al final
+        num_part = "".join(ch for ch in stem if ch.isdigit())
+        case_number = num_part if num_part else "–"
 
-        # Título centrado
         st.markdown(
             f"<h3 style='text-align:center'>{titulo_prefix} {case_number}: {subtitulo_suffix}</h3>",
             unsafe_allow_html=True,
         )
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # Dividir la fila en 3 imágenes
-        img_row = Image.open(current_path)
-        w, h = img_row.size
-        col_w = w // 3
+        # =========================
+        # Mostrar imágenes
+        # =========================
+        if tipo == "🔴 Con tumor":
+            # fila row_XX con 3 columnas en una misma imagen
+            img_row = Image.open(current_path)
+            w, h = img_row.size
+            col_w = w // 3
 
-        img_mri      = img_row.crop((0,        0, col_w,   h))
-        img_mask     = img_row.crop((col_w,    0, 2*col_w, h))
-        img_mri_mask = img_row.crop((2*col_w,  0, w,       h))
+            img_mri      = img_row.crop((0,        0, col_w,   h))
+            img_mask     = img_row.crop((col_w,    0, 2*col_w, h))
+            img_mri_mask = img_row.crop((2*col_w,  0, w,       h))
+        else:
+            # imagen única de RM: generamos máscara vacía
+            img_mri = Image.open(current_path).convert("RGB")
+            w, h = img_mri.size
+            img_mask = Image.new("L", (w, h), color=0)  # negro
+            img_mri_mask = img_mri  # misma imagen (sin máscara)
 
         c1, c2, c3 = st.columns(3)
 
@@ -448,7 +455,6 @@ def page_cases():
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # Nota distinta si es caso sano o con tumor
         if tipo == "🔴 Con tumor":
             note_text = (
                 "Nota: estos son ejemplos de cortes 2D con tumor. En la práctica se analizan "
@@ -457,9 +463,8 @@ def page_cases():
             )
         else:
             note_text = (
-                "Nota: en estos casos no se observa tumor en el corte mostrado y la máscara "
-                "debe permanecer vacía. Compararlos con los casos con tumor ayuda a entender "
-                "qué patrones está aprendiendo el modelo."
+                "Nota: en estos casos no hay tumor en el corte mostrado y la máscara permanece "
+                "vacía. Compararlos con los casos con tumor ayuda a entrenar y validar el modelo."
             )
 
         st.markdown(
@@ -696,6 +701,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
