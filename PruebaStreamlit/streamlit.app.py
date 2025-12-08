@@ -312,32 +312,86 @@ def page_model():
 
 
 
+from PIL import Image
+
+IMG_TARGET_SIZE = (320, 320)  # ancho, alto común para todas las imágenes
+
+
+def resize_to_common(img, size=IMG_TARGET_SIZE):
+    """Resize image to a common size for display."""
+    return img.resize(size, Image.BILINEAR)
+
+
 def page_cases(): 
-    st.header("🖼️ Ejemplos de tumores cerebrales en RM")
+    # =====================
+    # Textos en HTML
+    # =====================
+    intro_html = """
+    <p>
+        We display examples of <strong>brain MRI slices</strong> with and without
+        <strong>tumor segmentation</strong>. For each case you can see:
+    </p>
+    <ol>
+        <li><strong>Original MRI</strong></li>
+        <li><strong>Binary tumor mask</strong> (white = tumor, black = background)</li>
+        <li><strong>MRI with the mask overlaid</strong> (only for tumor cases)</li>
+    </ol>
+    """
 
-    st.markdown(
-        """
-        Aquí mostramos cortes de **resonancia magnética cerebral** con y sin **tumor segmentado**.
-        En cada ejemplo verás:
+    interp_tumor_html = """
+    <h4>Clinical / data-analyst interpretation (with tumor)</h4>
+    <ul>
+        <li><strong>Region of interest:</strong> a focal hyperintense lesion is visible within the brain parenchyma. The binary mask highlights all pixels classified as tumor.</li>
+        <li><strong>Segmentation concept:</strong> every white pixel in the mask corresponds to voxels that the model (or manual annotation) considers part of the tumor.</li>
+        <li><strong>Visual benefit:</strong> the overlaid image makes it easier to appreciate tumor borders, mass effect and the relationship to surrounding tissue.</li>
+        <li><strong>Data perspective:</strong> this slice is a <em>positive sample</em>; the mask provides dense supervision for training segmentation models (Dice, IoU, pixel-wise accuracy, etc.).</li>
+    </ul>
+    """
 
-        1. **RM original**  
-        2. **Máscara binaria del tumor** (blanco = tumor, negro = fondo)  
-        3. **RM con la máscara superpuesta** (solo en los casos con tumor)
-        """
-    )
+    interp_no_tumor_html = """
+    <h4>Clinical / data-analyst interpretation (no visible tumor)</h4>
+    <ul>
+        <li><strong>Overall impression:</strong> normal-appearing brain MRI for this slice, with no focal mass, no obvious edema and preserved symmetry.</li>
+        <li><strong>Segmentation point of view:</strong> this is a <em>negative sample</em>; the corresponding mask is empty, so no pixels are labelled as tumor.</li>
+        <li><strong>Why it matters:</strong> negative cases are crucial to reduce false positives and to teach the network what healthy anatomy looks like.</li>
+        <li><strong>Expected model behavior:</strong> the model should assign low tumor probability to all pixels in this image. Any high activation would be a potential false positive.</li>
+    </ul>
+    """
+
+    note_tumor_html = """
+    <p style="text-align:center; font-size:0.9rem;">
+        Note: these are 2D slices with visible tumor. In clinical practice, decisions are based on full 3D volumes,
+        multiple sequences (T1, T2, FLAIR, contrast) and the patient&apos;s clinical history.
+    </p>
+    """
+
+    note_no_tumor_html = """
+    <p style="text-align:center; font-size:0.9rem;">
+        Note: in these cases no tumor is visible on the displayed slice. The effective tumor mask is empty,
+        so MRI with and without mask look identical. Comparing healthy and tumor slices is key to training
+        and validating the model.
+    </p>
+    """
+
+    # =====================
+    # Cabecera
+    # =====================
+    st.header("🖼️ Brain tumor MRI examples")
+
+    st.markdown(intro_html, unsafe_allow_html=True)
 
     rows_dir = IMAGES_DIR
 
-    # ------------------ CASOS CON TUMOR (row_*.png) ------------------
+    # Casos con tumor: montajes tipo row_*.png
     tumor_rows = sorted(rows_dir.glob("row_*.png"))
 
-    # ------------------ CASOS SIN TUMOR (example_no_tumor*.png) ------------------
+    # Casos sin tumor: imágenes sueltas example_no_tumor*.png
     no_tumor_rows = sorted(rows_dir.glob("example_no_tumor*.png"))
 
     if not tumor_rows and not no_tumor_rows:
         st.error(
-            "No se han encontrado imágenes ni `row_*.png` (con tumor) "
-            "ni `example_no_tumor*.png` (sin tumor) en la carpeta "
+            "No images found: neither `row_*.png` (tumor cases) nor "
+            "`example_no_tumor*.png` (healthy cases) in folder "
             f"`{rows_dir}`."
         )
         return
@@ -351,36 +405,36 @@ def page_cases():
 
         # Primero SIN tumor, luego CON tumor
         tipo = st.radio(
-            "Selecciona tipo de caso",
-            ("🟢 Sin tumor", "🔴 Con tumor"),
+            "Select case type",
+            ("🟢 No tumor", "🔴 With tumor"),
             horizontal=True,
             index=0,
         )
 
-        if tipo == "🔴 Con tumor":
+        if tipo == "🔴 With tumor":
             active_rows = tumor_rows
             state_key = "random_row_idx_tumor"
-            boton_texto = "🔀 Mostrar otro caso con tumor"
-            titulo_prefix = "Caso"
-            subtitulo_suffix = "tumor cerebral segmentado"
+            button_text = "🔀 Show another tumor case"
+            title_prefix = "Case"
+            subtitle_suffix = "brain tumor segmentation"
         else:
             active_rows = no_tumor_rows
             state_key = "random_row_idx_no_tumor"
-            boton_texto = "🔀 Mostrar otro caso sano"
-            titulo_prefix = "Caso sano"
-            subtitulo_suffix = "RM sin tumor visible"
+            button_text = "🔀 Show another healthy case"
+            title_prefix = "Healthy case"
+            subtitle_suffix = "MRI without visible tumor"
 
         if not active_rows:
-            if tipo == "🔴 Con tumor":
+            if tipo == "🔴 With tumor":
                 st.warning(
-                    "No hay imágenes `row_*.png` para casos con tumor.\n"
-                    "Asegúrate de que `row_01.png`, `row_02.png`, ... están en la carpeta Imagen."
+                    "No `row_*.png` images found for tumor cases.\n"
+                    "Please add files like `row_01.png`, `row_02.png`, ... to the Imagen folder."
                 )
             else:
                 st.warning(
-                    "No hay imágenes `example_no_tumor*.png` para casos sin tumor.\n"
-                    "Coloca archivos como `example_no_tumor.png`, "
-                    "`example_no_tumor2.png`, ... en la carpeta Imagen."
+                    "No `example_no_tumor*.png` images found for healthy cases.\n"
+                    "Please add files like `example_no_tumor.png`, "
+                    "`example_no_tumor2.png`, ... to the Imagen folder."
                 )
             return
 
@@ -390,7 +444,7 @@ def page_cases():
         # Botón centrado
         bc1, bc2, bc3 = st.columns([1, 2, 1])
         with bc2:
-            if st.button(boton_texto):
+            if st.button(button_text):
                 st.session_state[state_key] = random.randrange(len(active_rows))
 
         st.markdown("<br>", unsafe_allow_html=True)
@@ -403,128 +457,81 @@ def page_cases():
         case_number = num_part if num_part else "–"
 
         st.markdown(
-            f"<h3 style='text-align:center'>{titulo_prefix} {case_number}: {subtitulo_suffix}</h3>",
+            f"<h3 style='text-align:center'>{title_prefix} {case_number}: {subtitle_suffix}</h3>",
             unsafe_allow_html=True,
         )
         st.markdown("<br>", unsafe_allow_html=True)
 
         # =========================
-        # Mostrar imágenes
+        # Mostrar imágenes (tamaños unificados)
         # =========================
-        if tipo == "🔴 Con tumor":
+        if tipo == "🔴 With tumor":
             # fila row_XX con 3 columnas en una misma imagen
             img_row = Image.open(current_path)
             w, h = img_row.size
             col_w = w // 3
 
-            img_mri      = img_row.crop((0,        0, col_w,   h))
-            img_mask     = img_row.crop((col_w,    0, 2*col_w, h))
-            img_mri_mask = img_row.crop((2*col_w,  0, w,       h))
+            img_mri      = resize_to_common(img_row.crop((0,        0, col_w,   h)))
+            img_mask     = resize_to_common(img_row.crop((col_w,    0, 2*col_w, h)))
+            img_mri_mask = resize_to_common(img_row.crop((2*col_w,  0, w,       h)))
 
             c1, c2, c3 = st.columns(3)
 
             with c1:
                 st.markdown(
-                    "<h5 style='text-align:center'>RM original</h5>",
+                    "<h5 style='text-align:center'>Original MRI</h5>",
                     unsafe_allow_html=True,
                 )
-                st.image(img_mri, use_column_width=True)
+                st.image(img_mri, use_column_width=False)
 
             with c2:
                 st.markdown(
-                    "<h5 style='text-align:center'>Máscara de tumor</h5>",
+                    "<h5 style='text-align:center'>Tumor mask</h5>",
                     unsafe_allow_html=True,
                 )
-                st.image(img_mask, use_column_width=True)
+                st.image(img_mask, use_column_width=False)
 
             with c3:
                 st.markdown(
-                    "<h5 style='text-align:center'>RM con máscara</h5>",
+                    "<h5 style='text-align:center'>MRI with mask</h5>",
                     unsafe_allow_html=True,
                 )
-                st.image(img_mri_mask, use_column_width=True)
+                st.image(img_mri_mask, use_column_width=False)
 
-            # 🧠 Descripción clínico–analítica en inglés (con tumor)
-            st.markdown(
-                """
-                #### Clinical / data analyst interpretation (with tumor)
-
-                - **Region of interest:** a focal hyperintense lesion is visible within the brain
-                  parenchyma. The binary mask highlights all pixels classified as tumor.
-                - **Segmentation concept:** every white pixel in the mask corresponds to voxels
-                  that the model (or the manual annotation) considers part of the tumor.
-                - **Visual benefit:** the overlaid image makes it easier to appreciate tumor
-                  borders, mass effect and relationship to surrounding tissue.
-                - **From a data point of view:** this slice would be labelled as a **positive
-                  sample**, and the mask provides dense supervision for training segmentation
-                  models (Dice, IoU, pixel-wise accuracy, etc.).
-                """
-            )
+            # Descripción clínico–analítica
+            st.markdown(interp_tumor_html, unsafe_allow_html=True)
+            st.markdown(note_tumor_html, unsafe_allow_html=True)
 
         else:
-            # ejemplo sin tumor: una única RM; la máscara está ya implícita (vacía)
+            # ejemplo sin tumor: una única RM
             img_mri = Image.open(current_path).convert("RGB")
+            img_mri = resize_to_common(img_mri)
 
-            # Pequeño toggle de vista, pero la imagen es la misma
-            vista = st.radio(
-                "Vista del caso sano",
-                ("🧼 Ver RM sin máscara", "🧼 Ver RM con máscara (sin tumor)"),
+            # Toggle de vista (misma imagen, distinto texto)
+            view = st.radio(
+                "Healthy case view",
+                ("🧼 Show MRI without mask", "🧼 Show MRI with (empty) mask"),
                 horizontal=True,
                 key="vista_sano",
             )
 
             st.markdown("<br>", unsafe_allow_html=True)
 
-            if vista == "🧼 Ver RM sin máscara":
+            if view == "🧼 Show MRI without mask":
                 st.markdown(
-                    "<h5 style='text-align:center'>RM original (sin tumor)</h5>",
+                    "<h5 style='text-align:center'>Original MRI (no tumor)</h5>",
                     unsafe_allow_html=True,
                 )
             else:
                 st.markdown(
-                    "<h5 style='text-align:center'>RM con máscara (máscara vacía)</h5>",
+                    "<h5 style='text-align:center'>MRI with mask (empty mask)</h5>",
                     unsafe_allow_html=True,
                 )
 
-            # En ambos casos se muestra la misma imagen, porque no hay tumor
             st.image(img_mri, use_column_width=False)
 
-            # 🧼 Descripción clínico–analítica en inglés (sin tumor)
-            st.markdown(
-                """
-                #### Clinical / data analyst interpretation (no visible tumor)
-
-                - **Overall impression:** normal-appearing brain MRI for this slice, with
-                  no focal mass, no clear edema pattern and preserved global symmetry.
-                - **Segmentation point of view:** this is a **negative sample**; the
-                  corresponding mask is empty, meaning no pixels are labelled as tumor.
-                - **Why it matters for the model:** negative cases are crucial to reduce
-                  false positives and to teach the network what healthy anatomy looks like.
-                - **Expected behavior:** the model should assign low tumor probability to
-                  all pixels in this image. Any high activation here would be a potential
-                  false positive.
-                """
-            )
-
-        st.markdown("<br>", unsafe_allow_html=True)
-
-        if tipo == "🔴 Con tumor":
-            note_text = (
-                "Nota: estos son ejemplos de cortes 2D con tumor. En la práctica se analizan "
-                "volúmenes 3D y múltiples secuencias (T1, T2, FLAIR, contraste), junto con "
-                "la historia clínica."
-            )
-        else:
-            note_text = (
-                "Nota: en estos casos no hay tumor en el corte mostrado. La 'máscara' es vacía, "
-                "por lo que la RM con y sin máscara se ven iguales. Compararlos con los casos "
-                "con tumor ayuda a entrenar y validar el modelo."
-            )
-
-        st.markdown(
-            f"<p style='text-align:center; font-size:0.9rem;'>{note_text}</p>",
-            unsafe_allow_html=True,
-        )
+            st.markdown(interp_no_tumor_html, unsafe_allow_html=True)
+            st.markdown(note_no_tumor_html, unsafe_allow_html=True)
 
 def page_media():
     st.header("🎥 Visual demo and appointment")
@@ -755,6 +762,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
