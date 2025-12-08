@@ -10,12 +10,14 @@ import numpy as np
 import random
 from pathlib import Path
 from PIL import Image
-from pathlib import Path
-from PIL import Image
-import random
 
-BASE_DIR = Path(__file__).resolve().parent   # carpeta donde está streamlit.app.py
-IMAGES_DIR = BASE_DIR / "PruebaStreamlit" / "Imagen"
+
+
+# Carpeta donde está el propio streamlit.app.py
+BASE_DIR = Path(__file__).resolve().parent
+
+# Carpeta de imágenes (Imagen está dentro de PruebaStreamlit junto al script)
+IMAGES_DIR = BASE_DIR / "Imagen"   # ⬅️ AQUÍ, no hace falta "PruebaStreamlit" porque ya estás dentro
 
 try:
     logo = Image.open("logo.png")
@@ -330,7 +332,9 @@ def page_cases():
     # ------------------------------
     # VISOR ALEATORIO DE FILAS row_XX
     # ------------------------------
-    rows_dir = Imagen_DIR          # PruebaStreamlit/Imagen
+    rows_dir = IMAGES_DIR          # ← usa la variable global definida arriba
+
+    # row_01.png, row_02.png, ...
     row_paths = sorted(rows_dir.glob("row_*.png"))
 
     if not row_paths:
@@ -601,6 +605,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
