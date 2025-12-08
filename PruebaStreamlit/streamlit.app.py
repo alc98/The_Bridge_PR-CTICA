@@ -293,8 +293,9 @@ def page_cases():
         """
     )
 
-    neg_img_path = r"C:\Users\Asus Vivobook\Downloads\mri-brain-perfusion-imaging-helps-260nw-2604057363.webp"
-    pos_img_path = r"C:\Users\Asus Vivobook\Downloads\images (1).jpg"
+    neg_img_path = "Imagen/images (1)"
+    pos_img_path = "Imagen/mri-brain-perfusion-imaging-helps-260nw-2604057363"
+
 
   
 
@@ -674,6 +675,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
