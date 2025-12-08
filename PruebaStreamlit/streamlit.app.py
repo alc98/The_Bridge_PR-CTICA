@@ -330,7 +330,7 @@ def page_cases():
     # ------------------------------
     # VISOR ALEATORIO DE FILAS row_XX
     # ------------------------------
-    rows_dir = IMAGES_DIR          # PruebaStreamlit/Imagen
+    rows_dir = Imagen_DIR          # PruebaStreamlit/Imagen
     row_paths = sorted(rows_dir.glob("row_*.png"))
 
     if not row_paths:
@@ -601,6 +601,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
