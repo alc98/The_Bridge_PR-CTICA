@@ -323,18 +323,13 @@ def page_cases():
         1. **RM original**  
         2. **Máscara binaria** del tumor (blanco = tumor, negro = fondo)  
         3. **RM con la máscara superpuesta**
-
-        Esto ilustra cómo un modelo de segmentación puede resaltar la zona tumoral
-        y ayudar al radiólogo en la interpretación.
         """
     )
 
     # ------------------------------
     # VISOR ALEATORIO DE FILAS row_XX
     # ------------------------------
-    rows_dir = IMAGES_DIR          # ← usa la variable global definida arriba
-
-    # row_01.png, row_02.png, ...
+    rows_dir = IMAGES_DIR          # carpeta Imagen
     row_paths = sorted(rows_dir.glob("row_*.png"))
 
     if not row_paths:
@@ -349,9 +344,13 @@ def page_cases():
     if "random_row_idx" not in st.session_state:
         st.session_state.random_row_idx = 0
 
-    # Botón para elegir una fila aleatoria
-    if st.button("🔀 Mostrar otro caso aleatorio"):
-        st.session_state.random_row_idx = random.randrange(len(row_paths))
+    # Botón centrado
+    st.markdown("<br>", unsafe_allow_html=True)
+    c1, c2, c3 = st.columns([1, 1, 1])
+    with c2:
+        if st.button("🔀 Mostrar otro caso aleatorio"):
+            st.session_state.random_row_idx = random.randrange(len(row_paths))
+    st.markdown("<br>", unsafe_allow_html=True)
 
     current_idx = st.session_state.random_row_idx
     current_path = row_paths[current_idx]
@@ -360,16 +359,48 @@ def page_cases():
     case_stem = current_path.stem              # "row_03"
     case_number = case_stem.split("_")[-1]     # "03"
 
-    st.subheader(f"Caso {case_number}: tumor cerebral segmentado")
-    st.image(
-        str(current_path),
-        use_column_width=True,
-        caption=(
-            f"{case_stem}.png · "
-            "RM original (izquierda), máscara binaria (centro), RM con máscara (derecha)"
-        )
+    # Título centrado
+    st.markdown(
+        f"<h3 style='text-align:center'>Caso {case_number}: tumor cerebral segmentado</h3>",
+        unsafe_allow_html=True,
     )
+    st.markdown("<br>", unsafe_allow_html=True)
 
+    # ------------------------------
+    # Dividir la fila en 3 columnas visuales
+    # ------------------------------
+    img_row = Image.open(current_path)
+    w, h = img_row.size
+    col_w = w // 3
+
+    img_mri       = img_row.crop((0,         0, col_w,   h))
+    img_mask      = img_row.crop((col_w,     0, 2*col_w, h))
+    img_mri_mask  = img_row.crop((2*col_w,   0, w,       h))
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        st.markdown(
+            "<h5 style='text-align:center'>RM original</h5>",
+            unsafe_allow_html=True,
+        )
+        st.image(img_mri, use_column_width=True)
+
+    with col2:
+        st.markdown(
+            "<h5 style='text-align:center'>Máscara de tumor</h5>",
+            unsafe_allow_html=True,
+        )
+        st.image(img_mask, use_column_width=True)
+
+    with col3:
+        st.markdown(
+            "<h5 style='text-align:center'>RM con máscara</h5>",
+            unsafe_allow_html=True,
+        )
+        st.image(img_mri_mask, use_column_width=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
     st.caption(
         "Nota: estos son ejemplos de cortes 2D. En la práctica se analizan volúmenes 3D "
         "y múltiples secuencias (T1, T2, FLAIR, contraste), junto con la historia clínica."
@@ -605,6 +636,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
