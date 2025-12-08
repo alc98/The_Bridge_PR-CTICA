@@ -10,6 +10,12 @@ import numpy as np
 import random
 from pathlib import Path
 from PIL import Image
+from pathlib import Path
+from PIL import Image
+import random
+
+BASE_DIR = Path(__file__).resolve().parent   # carpeta donde está streamlit.app.py
+IMAGES_DIR = BASE_DIR / "PruebaStreamlit" / "Imagen"
 
 try:
     logo = Image.open("logo.png")
@@ -321,13 +327,16 @@ def page_cases():
         """
     )
 
-    # Carpeta donde están tus row_01.png, row_02.png, ...
-    rows_dir = Path("Imagen")
+    # ------------------------------
+    # VISOR ALEATORIO DE FILAS row_XX
+    # ------------------------------
+    rows_dir = IMAGES_DIR          # PruebaStreamlit/Imagen
     row_paths = sorted(rows_dir.glob("row_*.png"))
 
     if not row_paths:
         st.error(
-            "No se han encontrado imágenes `row_*.png` en la carpeta `Imagen`. "
+            "No se han encontrado imágenes `row_*.png` en la carpeta "
+            f"`{rows_dir}`.\n\n"
             "Asegúrate de que tus archivos (row_01.png, row_02.png, ...) están ahí."
         )
         return
@@ -343,15 +352,18 @@ def page_cases():
     current_idx = st.session_state.random_row_idx
     current_path = row_paths[current_idx]
 
-    # Nombre del archivo como “título” del caso
-    case_stem = current_path.stem        # p.ej. "row_03"
-    case_number = case_stem.split("_")[-1]  # "03"
+    # Ej: 'row_03' -> número de caso
+    case_stem = current_path.stem              # "row_03"
+    case_number = case_stem.split("_")[-1]     # "03"
 
     st.subheader(f"Caso {case_number}: tumor cerebral segmentado")
     st.image(
         str(current_path),
         use_column_width=True,
-        caption=f"{case_stem}.png · RM (izq.), máscara (centro), RM+máscara (dcha.)"
+        caption=(
+            f"{case_stem}.png · "
+            "RM original (izquierda), máscara binaria (centro), RM con máscara (derecha)"
+        )
     )
 
     st.caption(
@@ -589,6 +601,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
