@@ -305,226 +305,59 @@ def page_model():
 
 
 def page_cases(): 
-    st.header("🖼️ Ejemplos de cáncer cerebral en RM")
+    st.header("🖼️ Ejemplos de tumores cerebrales en RM")
 
     st.markdown(
         """
-        En esta sección mostramos ejemplos de **tumor cerebral** en cortes de
-        resonancia magnética (RM), junto con sus **máscaras de segmentación**.
+        Aquí mostramos cortes de **resonancia magnética cerebral** con **tumores segmentados**.
+        En cada fila se ven, de izquierda a derecha:
 
-        En la práctica clínica, el objetivo no es solo decir “tumor sí/no”, sino valorar:
-        - **Localización** del tumor (lóbulos frontal, temporal, parietal…).
-        - **Efecto masa y desplazamiento de la línea media**.
-        - **Edema e infiltración** del tejido adyacente.
-        - **Patrón de realce con contraste**, que orienta sobre la agresividad del tumor.
+        1. **RM original**  
+        2. **Máscara binaria** del tumor (blanco = tumor, negro = fondo)  
+        3. **RM con la máscara superpuesta**
 
-        Estos elementos, combinados con la clínica del paciente, guían decisiones
-        como biopsia, cirugía y seguimiento.
+        Esto ilustra cómo un modelo de segmentación puede resaltar la zona tumoral
+        y ayudar al radiólogo en la interpretación.
         """
     )
 
-    # ------------------------------------------------------------------
-    # EJEMPLO FIJO NEGATIVO / POSITIVO (puedes cambiar las rutas)
-    # ------------------------------------------------------------------
-    neg_img_path = "Imagen/images (1).jpg"   # MRI sin tumor
-    neg_mask_path = "Imagen/negativo_mask.png"
-    pos_img_path = "Imagen/positivo_mri.png"
-    pos_mask_path = "Imagen/positivo_mask.png"
-
-    st.markdown("### Caso negativo (sin tumor cerebral)")
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.caption("RM cerebral – caso negativo")
-        try:
-            neg_img = Image.open(neg_img_path)
-            st.image(neg_img, use_column_width=True)
-        except Exception:
-            st.info(f"Coloca la imagen del caso negativo en `{neg_img_path}`.")
-
-    with col2:
-        st.caption("Máscara – caso negativo (sin tumor)")
-        try:
-            neg_mask = Image.open(neg_mask_path)
-            st.image(neg_mask, use_column_width=True)
-        except Exception:
-            st.info(f"Coloca la máscara del caso negativo en `{neg_mask_path}`.")
-
-    st.markdown("---")
-    st.markdown("### Caso positivo (con tumor cerebral)")
-    col3, col4 = st.columns(2)
-
-    with col3:
-        st.caption("RM cerebral – caso positivo")
-        try:
-            pos_img = Image.open(pos_img_path)
-            st.image(pos_img, use_column_width=True)
-        except Exception:
-            st.info(f"Coloca la imagen del caso positivo en `{pos_img_path}`.")
-
-    with col4:
-        st.caption("Máscara – caso positivo (tumor en blanco)")
-        try:
-            pos_mask = Image.open(pos_mask_path)
-            st.image(pos_mask, use_column_width=True)
-        except Exception:
-            st.info(f"Coloca la máscara del caso positivo en `{pos_mask_path}`.")
-
-    st.info(
-        """
-        Estos ejemplos corresponden a cortes 2D individuales. En la realidad se revisa
-        todo el estudio 3D y varias secuencias (T1, T2, FLAIR, contraste), junto con
-        la historia clínica del paciente.
-        """
-    )
-
-    # ------------------------------------------------------------------
-    # VISOR ALEATORIO DE FILAS (row_01.png, row_02.png, ...)
-    # ------------------------------------------------------------------
-    st.markdown("---")
-    st.markdown("### 🎲 Explorador aleatorio de casos")
-
-    st.markdown(
-        "Aquí puedes ver, de forma aleatoria, una fila completa de ejemplos "
-        "(**RM**, **máscara** y **RM + máscara**) obtenidos del dataset."
-    )
-
-    # Carpeta donde has guardado las filas recortadas:
-    # pon ahí tus row_01.png, row_02.png, ... (ajusta si las tienes en otro sitio)
-    rows_dir = Path("Imagen/rows")   # <-- CAMBIA si las tienes en otra carpeta
+    # Carpeta donde están tus row_01.png, row_02.png, ...
+    rows_dir = Path("Imagen")
     row_paths = sorted(rows_dir.glob("row_*.png"))
 
     if not row_paths:
-        st.info(
-            "No se han encontrado imágenes `row_*.png` en "
-            f"`{rows_dir}`. Copia allí tus filas (row_01.png, row_02.png, ...)."
+        st.error(
+            "No se han encontrado imágenes `row_*.png` en la carpeta `Imagen`. "
+            "Asegúrate de que tus archivos (row_01.png, row_02.png, ...) están ahí."
         )
         return
 
-    # Estado para recordar qué fila se está mostrando
+    # Estado para recordar qué fila mostramos
     if "random_row_idx" not in st.session_state:
         st.session_state.random_row_idx = 0
 
+    # Botón para elegir una fila aleatoria
     if st.button("🔀 Mostrar otro caso aleatorio"):
         st.session_state.random_row_idx = random.randrange(len(row_paths))
 
     current_idx = st.session_state.random_row_idx
     current_path = row_paths[current_idx]
 
-    st.caption(f"Caso aleatorio {current_idx + 1} de {len(row_paths)}")
-    st.image(str(current_path), use_column_width=True)
-    
-def page_live_prediction():
-    st.header("🔍 Live prediction with Flask model")
+    # Nombre del archivo como “título” del caso
+    case_stem = current_path.stem        # p.ej. "row_03"
+    case_number = case_stem.split("_")[-1]  # "03"
 
-    st.markdown(
-        """
-        Upload an MRI image and the system will query the **deep learning model**
-        deployed in Flask to predict whether there is a tumor or not.
-        """
+    st.subheader(f"Caso {case_number}: tumor cerebral segmentado")
+    st.image(
+        str(current_path),
+        use_column_width=True,
+        caption=f"{case_stem}.png · RM (izq.), máscara (centro), RM+máscara (dcha.)"
     )
 
-    st.markdown(
-        """
-        In a realistic deployment, the input would often be an entire MRI study
-        (many slices and sequences) rather than a single image. A more advanced system
-        could:
-        - Aggregate predictions across slices to provide a per-patient risk score.
-        - Produce a 3D segmentation and estimate total tumor volume.
-        - Track changes over time across multiple exams to quantify treatment response.
-        Here we simplify this process to make the interaction easier to understand.
-        """
+    st.caption(
+        "Nota: estos son ejemplos de cortes 2D. En la práctica se analizan volúmenes 3D "
+        "y múltiples secuencias (T1, T2, FLAIR, contraste), junto con la historia clínica."
     )
-
-    st.sidebar.markdown("### ⚙️ Flask API configuration")
-    api_url = st.sidebar.text_input("Base API URL", "http://localhost:8000")
-
-    uploaded_file = st.file_uploader(
-        "Upload an MRI image (PNG/JPG)",
-        type=["png", "jpg", "jpeg"]
-    )
-
-    st.warning(
-        """
-        Never upload real patient-identifiable data to public demos.
-        In real projects, DICOM images must be properly anonymized (removing names,
-        IDs and any facial features) and handled under strict data protection and
-        ethical guidelines.
-        """
-    )
-
-    if uploaded_file is not None:
-        pil_img = Image.open(uploaded_file)
-        st.image(pil_img, caption="Uploaded MRI", use_column_width=True)
-
-        if st.button("Analyze MRI"):
-            with st.spinner("Querying Flask model..."):
-              
-                try:
-                    response = call_flask_model(api_url, pil_img)
-                    used_backup = False
-                except Exception as e_main:
-                    st.error(f"Error calling main Flask API ({api_url}): {e_main}")
-                    st.info("Trying backup local Flask app (.app) instead...")
-
-             
-                    try:
-                        response = call_flask_model_backup(pil_img)
-                        used_backup = True
-                    except Exception as e_backup:
-                        st.error(f"Backup Flask app (.app) also failed: {e_backup}")
-                        return
-
-            st.markdown("### Model result")
-
-            if 'used_backup' in locals() and used_backup:
-                st.caption("Result obtained from backup Flask app (.app).")
-
-            has_tumor = response.get("has_tumor", None)
-            prob = response.get("probability", None)
-
-            if has_tumor is None or prob is None:
-                st.error(
-                    "The API response does not contain the expected keys "
-                    "(`has_tumor`, `probability`). Adapt the code to your format."
-                )
-            else:
-                diagnosis = "TUMOR DETECTED" if has_tumor else "NO SIGNS OF TUMOR"
-                color = "🔴" if has_tumor else "🟢"
-
-                st.metric(
-                    label="Model diagnosis",
-                    value=f"{color} {diagnosis}"
-                )
-                st.metric(
-                    label="Tumor probability",
-                    value=f"{prob*100:.2f} %"
-                )
-
-                st.markdown(
-                    """
-                    The reported probability should be interpreted as an approximate
-                    **risk score**, not as a definitive diagnosis. Values close to 0.5
-                    usually indicate uncertainty; in that range, the model should only
-                    be used as a prompt for closer human review, never as an automatic
-                    decision-maker.
-                    """
-                )
-
-            mask_b64 = response.get("mask_base64", None)
-            if mask_b64:
-                st.markdown("### Segmentation mask (optional)")
-                try:
-                    mask_arr = decode_mask_from_b64(mask_b64)
-                    st.image(mask_arr, caption="Mask predicted by the model", use_column_width=True)
-                except Exception:
-                    st.info("The mask returned by the API could not be decoded.")
-
-                st.caption(
-                    "Segmentation masks allow automatic computation of tumor volume and shape "
-                    "features (radiomics), which can be correlated with prognosis or molecular "
-                    "subtypes in research studies."
-                )
 
 
 def page_media():
@@ -756,6 +589,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
