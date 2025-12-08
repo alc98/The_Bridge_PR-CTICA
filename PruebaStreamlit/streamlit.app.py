@@ -326,7 +326,7 @@ def page_cases():
     )
 
     neg_img_path = "PruebaStreamlit/Imagen/images (1).jpg"
-    neg_mask_path = "images/caso_negativo_mask.png"
+    neg_mask_path = "PruebaStreamlit/Imagen/Captura de pantalla 2025-12-08 181748.png"
     pos_img_path = "images/caso_positivo_mri.png"
     pos_mask_path = "images/caso_positivo_mask.png"
 
@@ -721,6 +721,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
