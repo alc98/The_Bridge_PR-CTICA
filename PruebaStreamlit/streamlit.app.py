@@ -293,11 +293,11 @@ def page_cases():
         """
     )
 
-    neg_img_path = "Imagen/images (1)"
-    pos_img_path = "Imagen/mri-brain-perfusion-imaging-helps-260nw-2604057363"
+    neg_img_path = "images/caso_negativo_mri.png"
+    neg_mask_path = "images/caso_negativo_mask.png"
+    pos_img_path = "images/caso_positivo_mri.png"
+    pos_mask_path = "images/caso_positivo_mask.png"
 
-
-  
 
     st.markdown("### Negative case (no tumor)")
     col1, col2 = st.columns(2)
@@ -675,6 +675,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
