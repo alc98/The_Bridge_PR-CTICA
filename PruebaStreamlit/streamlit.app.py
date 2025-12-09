@@ -176,7 +176,7 @@ def page_dataset():
     st.header("📊 Análisis de la base de datos")
 
     # Ruta al CSV de las imágenes
-    route_path = Path("Imagen") / "route_label.csv"
+    route_path = BASE_DIR / "Imagen" / "route_label.csv"
 
     try:
         df_routes = pd.read_csv(route_path)
@@ -942,6 +942,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
