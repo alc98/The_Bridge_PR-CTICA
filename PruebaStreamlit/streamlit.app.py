@@ -214,10 +214,7 @@ def page_dataset():
 
     tab_table, tab_plots = st.tabs(["📄 Table", "📈 Plots"])
 
-    # ===== TABLE =====
-    with tab_table:
-        st.subheader("Overview of `route_label.csv`")
-        st.dataframe(df_routes[df_routes.columns[2:]])
+
 
 
     # ===== PLOTS =====
@@ -261,6 +258,10 @@ def page_dataset():
             "of the images are labelled as positive (`mask = 1`)."
         )
 
+        # ===== TABLE =====
+        with tab_table:
+            st.subheader("Overview of `route_label.csv`")
+            st.dataframe(df_routes[df_routes.columns[]])
     # =====================================================================
     #  🔬 Scientific medical + data science interpretation
     # =====================================================================
@@ -828,6 +829,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
