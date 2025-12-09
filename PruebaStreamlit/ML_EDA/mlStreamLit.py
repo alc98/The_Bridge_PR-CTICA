@@ -19,13 +19,43 @@ import matplotlib.pyplot as plt
 @st.cache_data
 def load_data() -> pd.DataFrame:
     """
-    Carga el CSV limpio de casas.
-    Ajusta la ruta si lo tienes en otra carpeta.
+    Carga el CSV de housing probando varias rutas.
+    Si no lo encuentra, pedirá al usuario que suba el fichero.
     """
     base_dir = Path(__file__).resolve().parent
-    path = base_dir / "housing_price_dataset.csv"  # adapta si lo tienes en /housing/...
-    df = pd.read_csv(path)
-    return df
+
+    # Candidatos de ruta según la estructura que has ido usando
+    candidate_paths = [
+        base_dir / "housing_price_dataset.csv",
+        base_dir / "housing_price_dataset_cleaned.csv",
+        base_dir / "housing" / "housing_price_dataset.csv",
+        base_dir.parent / "housing" / "housing_price_dataset.csv",
+        base_dir.parent / "housing_price_dataset.csv",
+    ]
+
+    for path in candidate_paths:
+        if path.exists():
+            st.info(f"📄 Cargando dataset desde: `{path}`")
+            return pd.read_csv(path)
+
+    # Si llegamos aquí, no hemos encontrado el archivo en disco
+    st.warning(
+        "⚠️ No se ha encontrado el archivo de datos en las rutas esperadas.\n\n"
+        "Puedes subir el CSV manualmente para continuar."
+    )
+
+    uploaded = st.file_uploader(
+        "Sube aquí tu `housing_price_dataset.csv`",
+        type=["csv"]
+    )
+
+    if uploaded is not None:
+        st.success("✅ Archivo subido correctamente, cargando datos...")
+        return pd.read_csv(uploaded)
+
+    # Si todavía no hay archivo, paramos la ejecución de la app
+    st.stop()
+
 
 
 # ===========================
@@ -293,3 +323,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
