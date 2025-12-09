@@ -201,17 +201,7 @@ def page_dataset():
         st.dataframe(df_routes)
 
     # ===== GRÁFICAS =====
-    with tab_graficas:
-        if "mask" not in df_routes.columns:
-            st.info(
-                "El CSV no tiene una columna llamada `mask`. "
-                "No se puede calcular la distribución de tumor / no tumor."
-            )
-            return
-
-        st.subheader("Distribución de clases (columna `mask`)")
-
-        # Conteo 0 / 1
+    # Conteo 0 / 1
         class_counts = (
             df_routes["mask"]
             .value_counts()
@@ -823,6 +813,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
