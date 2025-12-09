@@ -261,80 +261,75 @@ def page_dataset():
         )
 
 
-    #  🔬 Scientific medical + data science interpretation
-    
-    # Re-compute prevalence for the explanatory text
-    prevalence_global = df_routes["mask"].mean()
-    negative_pct = (1 - prevalence_global) * 100
-    positive_pct = prevalence_global * 100
+   # =====================================================================
+#  🔬 Scientific medical + data science interpretation
+# =====================================================================
+prevalence_global = df_routes["mask"].mean()
+negative_pct = (1 - prevalence_global) * 100
+positive_pct = prevalence_global * 100
 
-    st.markdown(f"""
-    
-    ## 🧠 Scientific interpretation of the dataset
+st.markdown(f"""
+---
+## 🧠 Scientific interpretation of the dataset
 
-    ### Composition of the cohort (image-level)
+### 1. Cohort composition (image-level class distribution)
 
-    Each row in `route_label.csv` corresponds to a **single brain MRI slice** and contains:
-    - **`image_path`** → path to the MRI slice  
-    - **`mask_path`** → path to the corresponding segmentation mask (binary, 0/1 per pixel)  
-    - **`mask`** → image-level ground-truth label:
-        - **0 = Negative** → no tumor voxels annotated in the mask  
-        - **1 = Positive** → at least one voxel annotated as tumor  
+In this dataset:
 
-    In this dataset:
+- **≈ {negative_pct:.1f}%** of MRI slices are labelled as  
+  **0 – Negative (no tumor)**  
+- **≈ {positive_pct:.1f}%** of MRI slices are labelled as  
+  **1 – Positive (tumor present)**  
 
-    - Approximately **{negative_pct:.1f}%** of slices are labelled as  
-      **0 – Negative (no tumor)**.  
-    - Approximately **{positive_pct:.1f}%** of slices are labelled as  
-      **1 – Positive (tumor present)**.  
+This yields an **image-level tumor prevalence of approximately {positive_pct:.1f}%**.
 
-    This corresponds to an **image-level tumor prevalence of ~{positive_pct:.1f}%**.
+From a methodological standpoint, this indicates a **moderately imbalanced dataset**, 
+with a dominant negative class and a substantial proportion of positive slices.  
+Therefore, **any classification model** must outperform a trivial baseline predicting 
+the majority class (≈ **{negative_pct:.1f}% accuracy**) to demonstrate meaningful discriminative value.
 
-    From a methodological perspective, the dataset is therefore **moderately imbalanced**,
-    with a majority of negative slices and a substantial proportion of positive slices.  
-    Any classification model trained on this cohort should clearly outperform a naive
-    baseline that always predicts the majority class (~{negative_pct:.1f}% accuracy).
+---
 
-    
+## 2. Clinical and machine-learning implications
 
-    ## Clinical and machine-learning implications
+- The enrichment in tumor-positive slices (≈ {positive_pct:.1f}%) is higher than in routine clinical cohorts, 
+  which usually contain far fewer tumors.  
+  This is beneficial for model development because it provides enough positive examples to learn tumor morphology.
 
-    - The enrichment in tumor-positive slices (~{positive_pct:.1f}%) is higher than what is
-      typically observed in routine clinical practice, where most MRIs are normal.
-      This is desirable for **model development**, as it provides enough positive examples
-      to learn tumor-related patterns and to train segmentation networks.
+- Due to the moderate imbalance, evaluation should not rely solely on accuracy.  
+  More informative metrics include:  
+    - **Sensitivity / recall** for positive cases  
+    - **Specificity** for negative cases  
+    - **AUC-ROC and AUC-PR**
 
-    - However, because the data are not perfectly balanced, evaluation metrics should not
-      rely solely on accuracy. In particular, it is important to report:
-        - **Sensitivity / recall for positive cases (mask = 1)**  
-        - **Specificity for negative cases (mask = 0)**  
-        - **AUC-ROC and, ideally, AUC-PR**, which are more informative under class imbalance.
+- If the model tends to under-detect tumors, consider using:  
+    - **class-weighted loss**,  
+    - **focal loss**,  
+    - or **oversampling of positive slices**.
 
-    - If a model underestimates tumors, techniques such as **class-weighted loss functions**,
-      **focal loss**, or **oversampling of positive slices** may be considered to improve
-      detection performance.
+---
 
-    
+## 3. Utility of the `mask` column
 
-    ## Role of the `mask` label
+Although full voxel-level segmentation masks are available via `mask_path`, this binary 
+image-level label (`mask`) enables:
 
-    Although voxel-wise segmentation masks are available via `mask_path`, the binary
-    `mask` column provides a compact **image-level label** that enables:
+- Rapid assessment of **class distribution**  
+- Training of a **binary tumor vs. no-tumor classifier**  
+- Stratified analyses (e.g., intensity or radiomic differences between classes)
 
-    - Rapid assessment of **class balance** (as visualized in the pie chart).  
-    - Training of a **binary tumor vs. no-tumor classifier** as a first-stage screening model.  
-    - Stratified analyses, for example comparing intensity distributions or radiomic features
-      between positive and negative slices.
+Clinically, one may summarize the cohort as:
 
-    From a clinical research standpoint, one can summarize the cohort as:
+> *"In this dataset, approximately {positive_pct:.1f}% of MRI slices contain visible tumor tissue.  
+> This prevalence establishes the baseline that any automated detection model must exceed to be clinically relevant."*
 
-    > "In this dataset, approximately **{positive_pct:.1f}% of MRI slices** contain visible
-    > tumor tissue according to expert segmentation. This prevalence defines the baseline
-    > that any automated detection system must surpass in order to be clinically useful."
-    """)
+---
 
-
-
+## 4. Suggested next step
+Compute **tumor burden per slice** (percentage of pixels labelled as tumor).  
+Displaying its distribution via histograms or boxplots gives richer insight into lesion size 
+and heterogeneity — highly valuable for both ML and radiological interpretation.
+""")
 
 
 
@@ -905,6 +900,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
