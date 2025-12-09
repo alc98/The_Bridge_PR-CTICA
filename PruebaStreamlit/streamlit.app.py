@@ -167,39 +167,26 @@ def page_intro():
         """
     )
 def page_dataset():
-    st.header("📊 Database analysis")
+    st.header("📊 Análisis de la base de datos")
 
     if df.empty:
-        st.error("`data.csv` was not found. Place it next to `app.py` and reload the page.")
+        st.error("No se ha encontrado `data.csv`. Colócalo junto a `app.py` y recarga la página.")
         return
 
-    st.caption(f"Rows: {df.shape[0]} · Columns: {df.shape[1]}")
+    st.caption(f"Filas: {df.shape[0]} · Columnas: {df.shape[1]}")
 
-    st.markdown(
-        """
-        From an epidemiological and data-science point of view, this dataset represents
-        a simplified cohort. In real projects we would also collect variables such as:
-        - Age, presenting symptoms and performance status.
-        - Tumor grade, histology and molecular markers (e.g. IDH, MGMT, 1p/19q).
-        - Treatment (surgery, radiotherapy, chemotherapy, targeted therapies).
-        - Outcomes such as progression-free and overall survival.
-        These additional features enable models not only for **detection**, but also for
-        **prognosis**, **treatment selection** and **response evaluation**.
-        """
-    )
-
-    tab_tabla, tab_graficas = st.tabs(["📄 Table", "📈 Charts"])
+    tab_tabla, tab_graficas = st.tabs(["📄 Tabla", "📈 Gráficas"])
 
     with tab_tabla:
-        st.subheader("Dataset overview")
+        st.subheader("Vista general del dataset")
         st.dataframe(df)
 
     with tab_graficas:
         if GENDER_COL not in df.columns:
-            st.info(f"The column `{GENDER_COL}` was not found in the CSV.")
+            st.info(f"No se encontró la columna `{GENDER_COL}` en el CSV.")
             return
 
-        st.markdown("### Distribution by gender")
+        st.markdown("### Distribución por género")
 
         df_count = df.groupby(GENDER_COL).size().reset_index(name="count")
 
@@ -207,18 +194,12 @@ def page_dataset():
             df_count,
             values="count",
             names=GENDER_COL,
-            title="Distribution of patients by gender"
+            title="Distribución de pacientes por género"
         )
         st.plotly_chart(fig_pie, use_container_width=True)
 
-        st.caption(
-            "Differences in gender distribution can reflect real epidemiological trends, "
-            "but they may also be influenced by sample size, referral patterns or "
-            "inclusion criteria of the study."
-        )
-
         if TUMOR_COL in df.columns:
-            st.markdown("### Tumor probability by gender")
+            st.markdown("### Probabilidad de tumor por género")
 
             df_avg = df.groupby(GENDER_COL)[TUMOR_COL].mean().reset_index(name="Tumor_Prob")
 
@@ -226,29 +207,23 @@ def page_dataset():
                 df_avg,
                 x=GENDER_COL,
                 y="Tumor_Prob",
-                title="Average tumor probability by gender",
-                labels={"Tumor_Prob": "Tumor probability"}
+                title="Probabilidad media de tumor por género",
+                labels={"Tumor_Prob": "Probabilidad de tumor"}
             )
             st.plotly_chart(fig_bar, use_container_width=True)
 
-            st.caption(
-                "Gender is usually not sufficient to make individual predictions by itself, "
-                "but it can be useful to describe the cohort and to check that the model's "
-                "performance is not systematically worse in a given subgroup."
-            )
-
-            st.markdown("### Query by gender")
+            st.markdown("### Consulta por género")
             genders = df[GENDER_COL].dropna().unique().tolist()
-            sel_gender = st.selectbox("Select gender", genders)
+            sel_gender = st.selectbox("Selecciona género", genders)
 
             prob_sel = df_avg.loc[df_avg[GENDER_COL] == sel_gender, "Tumor_Prob"].values
             if len(prob_sel) > 0:
                 st.success(
-                    f"Estimated average tumor probability for **{sel_gender}**: "
+                    f"Probabilidad media estimada de tumor para **{sel_gender}**: "
                     f"**{prob_sel[0]*100:.2f}%**"
                 )
 
-            st.markdown("### Global class distribution (tumor vs no tumor)")
+            st.markdown("### Distribución global de clases (tumor vs no tumor)")
 
             class_counts = df[TUMOR_COL].value_counts().reset_index()
             class_counts.columns = ["Class", "Count"]
@@ -257,20 +232,14 @@ def page_dataset():
                 class_counts,
                 x="Class",
                 y="Count",
-                title="Number of patients per class (0 = no tumor, 1 = tumor)",
+                title="Número de pacientes por clase (0 = no tumor, 1 = tumor)",
                 text="Count"
             )
             st.plotly_chart(fig_bool, use_container_width=True)
-
-            st.caption(
-                "If one class is much more frequent than the other (class imbalance), "
-                "we may need strategies such as re-weighting, resampling or specialized "
-                "loss functions to avoid a model that simply predicts the majority class."
-            )
         else:
             st.info(
-                f"The column `{TUMOR_COL}` was not found to compute probabilities "
-                "or the class distribution."
+                f"No se encontró la columna `{TUMOR_COL}` para calcular probabilidades "
+                "ni la distribución de clases."
             )
 
 def page_model():
@@ -985,6 +954,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
