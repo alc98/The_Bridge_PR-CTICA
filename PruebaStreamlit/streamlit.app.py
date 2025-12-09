@@ -260,16 +260,16 @@ def page_dataset():
             "are labelled as positive (`mask = 1`)."
         )
 
-    # =====================================================================
+
     #  🔬 Scientific medical + data science interpretation
-    # =====================================================================
+    
     # Re-compute prevalence for the explanatory text
     prevalence_global = df_routes["mask"].mean()
     negative_pct = (1 - prevalence_global) * 100
     positive_pct = prevalence_global * 100
 
     st.markdown(f"""
-    ---
+    
     ## 🧠 Scientific interpretation of the dataset
 
     ### Composition of the cohort (image-level)
@@ -295,7 +295,7 @@ def page_dataset():
     Any classification model trained on this cohort should clearly outperform a naive
     baseline that always predicts the majority class (~{negative_pct:.1f}% accuracy).
 
-    ---
+    
 
     ## Clinical and machine-learning implications
 
@@ -314,7 +314,7 @@ def page_dataset():
       **focal loss**, or **oversampling of positive slices** may be considered to improve
       detection performance.
 
-    ---
+    
 
     ## Role of the `mask` label
 
@@ -905,6 +905,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
