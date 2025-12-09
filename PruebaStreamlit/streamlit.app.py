@@ -166,6 +166,7 @@ def page_intro():
         motivations for using deep learning in neuro-oncology.
         """
     )
+    
 import streamlit as st
 import pandas as pd
 from pathlib import Path
@@ -174,88 +175,86 @@ import plotly.express as px
 BASE_DIR = Path(__file__).resolve().parent
 
 def page_dataset():  
-    st.header("📊 Análisis de la base de datos")
+    st.header("📊 Dataset analysis")
 
-    # 1ª ruta: carpeta Imagen (tu app actual)
+    # 1st path: Imagen folder (current app)
     route_path_1 = BASE_DIR / "Imagen" / "route_label.csv"
-    # 2ª ruta: repo brain-tumor-detection/data (por ejemplo en branch develop)
+    # 2nd path: brain-tumor-detection/data repo (e.g. develop branch)
     route_path_2 = BASE_DIR / "brain-tumor-detection" / "data" / "route_label.csv"
 
     df_routes = None
     used_path = None
 
-    # Intento 1
+    # First attempt
     try:
         df_routes = pd.read_csv(route_path_1)
         used_path = route_path_1
     except FileNotFoundError:
-        # Intento 2
+        # Second attempt
         try:
             df_routes = pd.read_csv(route_path_2)
             used_path = route_path_2
         except FileNotFoundError:
             st.error(
-                "No se ha encontrado el archivo `route_label.csv` en ninguna de las rutas:\n\n"
+                "The file `route_label.csv` was not found in any of the paths:\n\n"
                 f"- `{route_path_1}`\n"
                 f"- `{route_path_2}`\n\n"
-                "Revisa la estructura de carpetas o la rama del repositorio."
+                "Please check your folder structure or the repository branch."
             )
             return
 
-    # Quitamos índice si viene en el CSV
+    # Drop index column if it exists
     if "Unnamed: 0" in df_routes.columns:
         df_routes = df_routes.drop(columns=["Unnamed: 0"])
 
     st.caption(
-        f"Filas: {df_routes.shape[0]} · Columnas: {df_routes.shape[1]}  "
-        f"· CSV cargado desde: `{used_path}`"
+        f"Rows: {df_routes.shape[0]} · Columns: {df_routes.shape[1]}  "
+        f"· CSV loaded from: `{used_path}`"
     )
 
-    tab_tabla, tab_graficas = st.tabs(["📄 Tabla", "📈 Gráficas"])
+    tab_table, tab_plots = st.tabs(["📄 Table", "📈 Plots"])
 
-    # ===== TABLA =====
-    with tab_tabla:
-        st.subheader("Vista general de `route_label.csv`")
+    # ===== TABLE =====
+    with tab_table:
+        st.subheader("Overview of `route_label.csv`")
         st.dataframe(df_routes)
 
-    # ===== GRÁFICAS =====
-    with tab_graficas:
+    # ===== PLOTS =====
+    with tab_plots:
         if "mask" not in df_routes.columns:
-            st.info("El CSV no tiene una columna llamada `mask`.")
+            st.info("The CSV does not contain a `mask` column.")
             return
 
-        st.subheader("Distribución de clases (0 = negativo, 1 = positivo)")
+        st.subheader("Class distribution (0 = negative, 1 = positive)")
 
-        # 1) Conteo de 0 y 1
+        # 1) Count 0 and 1
         class_counts = df_routes["mask"].value_counts().reset_index()
-        class_counts.columns = ["mask_value", "Número de imágenes"]
+        class_counts.columns = ["mask_value", "Number of images"]
 
-        # 2) Mapeamos a etiquetas legibles
-        class_counts["Clase"] = class_counts["mask_value"].map({
-            0: "0 – Negativo (sin tumor)",
-            1: "1 – Positivo (con tumor)",
+        # 2) Map to readable labels
+        class_counts["Class"] = class_counts["mask_value"].map({
+            0: "0 – Negative (no tumor)",
+            1: "1 – Positive (tumor present)",
         })
 
-        # 3) Solo columnas necesarias
-        class_counts = class_counts[["Clase", "Número de imágenes"]]
+        # 3) Keep only the columns needed for the plot
+        class_counts = class_counts[["Class", "Number of images"]]
 
         # 4) Pie chart
         fig_pie = px.pie(
             class_counts,
-            names="Clase",
-            values="Número de imágenes",
-            title="Distribución de clases: tumor vs no tumor",
+            names="Class",
+            values="Number of images",
+            title="Class distribution: tumor vs no tumor",
         )
         st.plotly_chart(fig_pie, use_container_width=True)
 
-        # Prevalencia global
+        # Global prevalence
         prevalence = df_routes["mask"].mean()
         st.markdown(
-            f"**Prevalencia global de tumor:** ≈ **{prevalence*100:.2f}%** de las imágenes "
-            "son positivas (`mask = 1`)."
+            f"**Global tumor prevalence:** ≈ **{prevalence*100:.2f}%** of the images "
+            "are positive (`mask = 1`)."
         )
-
-
 
 
 
@@ -833,6 +832,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
