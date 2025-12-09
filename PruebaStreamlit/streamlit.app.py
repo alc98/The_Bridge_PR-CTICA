@@ -166,81 +166,69 @@ def page_intro():
         motivations for using deep learning in neuro-oncology.
         """
     )
-def page_dataset():
+from pathlib import Path
+import pandas as pd
+import plotly.express as px
+import streamlit as st
+# (estos imports seguramente ya los tienes arriba)
+
+def page_dataset(): 
     st.header("📊 Análisis de la base de datos")
 
-    if df.empty:
-        st.error("No se ha encontrado `data.csv`. Colócalo junto a `app.py` y recarga la página.")
+    # Ruta al CSV de las imágenes
+    route_path = Path("Imagen") / "route_label.csv"
+
+    try:
+        df_routes = pd.read_csv(route_path)
+    except FileNotFoundError:
+        st.error(
+            f"No se ha encontrado el archivo `{route_path}`.\n\n"
+            "Asegúrate de que existe la carpeta `Imagen` y dentro el fichero "
+            "`route_label.csv` en el mismo nivel que tu `app.py`."
+        )
         return
 
-    st.caption(f"Filas: {df.shape[0]} · Columnas: {df.shape[1]}")
+    if df_routes.empty:
+        st.warning("`route_label.csv` está vacío.")
+        return
+
+    st.caption(f"Filas: {df_routes.shape[0]} · Columnas: {df_routes.shape[1]}")
 
     tab_tabla, tab_graficas = st.tabs(["📄 Tabla", "📈 Gráficas"])
 
+    # --------- TABLA COMPLETA ---------
     with tab_tabla:
-        st.subheader("Vista general del dataset")
-        st.dataframe(df)
+        st.subheader("Vista general de `route_label.csv`")
+        st.dataframe(df_routes)
 
+    # --------- GRÁFICAS BÁSICAS ---------
     with tab_graficas:
-        if GENDER_COL not in df.columns:
-            st.info(f"No se encontró la columna `{GENDER_COL}` en el CSV.")
-            return
+        # Intentamos usar una columna llamada 'label' para contar clases
+        if "label" in df_routes.columns:
+            st.subheader("Distribución de clases (columna `label`)")
 
-        st.markdown("### Distribución por género")
-
-        df_count = df.groupby(GENDER_COL).size().reset_index(name="count")
-
-        fig_pie = px.pie(
-            df_count,
-            values="count",
-            names=GENDER_COL,
-            title="Distribución de pacientes por género"
-        )
-        st.plotly_chart(fig_pie, use_container_width=True)
-
-        if TUMOR_COL in df.columns:
-            st.markdown("### Probabilidad de tumor por género")
-
-            df_avg = df.groupby(GENDER_COL)[TUMOR_COL].mean().reset_index(name="Tumor_Prob")
-
-            fig_bar = px.bar(
-                df_avg,
-                x=GENDER_COL,
-                y="Tumor_Prob",
-                title="Probabilidad media de tumor por género",
-                labels={"Tumor_Prob": "Probabilidad de tumor"}
+            class_counts = (
+                df_routes["label"]
+                .value_counts()
+                .reset_index()
+                .rename(columns={"index": "label", "label": "count"})
             )
-            st.plotly_chart(fig_bar, use_container_width=True)
 
-            st.markdown("### Consulta por género")
-            genders = df[GENDER_COL].dropna().unique().tolist()
-            sel_gender = st.selectbox("Selecciona género", genders)
-
-            prob_sel = df_avg.loc[df_avg[GENDER_COL] == sel_gender, "Tumor_Prob"].values
-            if len(prob_sel) > 0:
-                st.success(
-                    f"Probabilidad media estimada de tumor para **{sel_gender}**: "
-                    f"**{prob_sel[0]*100:.2f}%**"
-                )
-
-            st.markdown("### Distribución global de clases (tumor vs no tumor)")
-
-            class_counts = df[TUMOR_COL].value_counts().reset_index()
-            class_counts.columns = ["Class", "Count"]
-
-            fig_bool = px.bar(
+            fig = px.bar(
                 class_counts,
-                x="Class",
-                y="Count",
-                title="Número de pacientes por clase (0 = no tumor, 1 = tumor)",
-                text="Count"
+                x="label",
+                y="count",
+                text="count",
+                title="Número de imágenes por clase",
+                labels={"label": "Clase", "count": "Nº de imágenes"},
             )
-            st.plotly_chart(fig_bool, use_container_width=True)
+            st.plotly_chart(fig, use_container_width=True)
         else:
             st.info(
-                f"No se encontró la columna `{TUMOR_COL}` para calcular probabilidades "
-                "ni la distribución de clases."
+                "El CSV no tiene una columna llamada `label`. "
+                "Se muestra solo la tabla en la pestaña anterior."
             )
+
 
 def page_model():
     st.header("🧬 Deep learning model")
@@ -954,6 +942,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
