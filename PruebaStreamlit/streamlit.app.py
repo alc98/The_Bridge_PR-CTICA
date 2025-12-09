@@ -176,24 +176,40 @@ BASE_DIR = Path(__file__).resolve().parent
 def page_dataset():  
     st.header("📊 Análisis de la base de datos")
 
-    # Ruta al CSV de las imágenes
-    route_path = BASE_DIR / "Imagen" / "route_label.csv"
+    # 1ª ruta: carpeta Imagen (tu app actual)
+    route_path_1 = BASE_DIR / "Imagen" / "route_label.csv"
+    # 2ª ruta: repo brain-tumor-detection/data (por ejemplo en branch develop)
+    route_path_2 = BASE_DIR / "brain-tumor-detection" / "data" / "route_label.csv"
 
+    df_routes = None
+    used_path = None
+
+    # Intento 1
     try:
-        df_routes = pd.read_csv(route_path)
+        df_routes = pd.read_csv(route_path_1)
+        used_path = route_path_1
     except FileNotFoundError:
-        st.error(
-            f"No se ha encontrado el archivo `{route_path}`.\n\n"
-            "Asegúrate de que existe la carpeta `Imagen` y dentro el fichero "
-            "`route_label.csv` en el mismo nivel que tu `app.py`."
-        )
-        return
+        # Intento 2
+        try:
+            df_routes = pd.read_csv(route_path_2)
+            used_path = route_path_2
+        except FileNotFoundError:
+            st.error(
+                "No se ha encontrado el archivo `route_label.csv` en ninguna de las rutas:\n\n"
+                f"- `{route_path_1}`\n"
+                f"- `{route_path_2}`\n\n"
+                "Revisa la estructura de carpetas o la rama del repositorio."
+            )
+            return
 
     # Quitamos índice si viene en el CSV
     if "Unnamed: 0" in df_routes.columns:
         df_routes = df_routes.drop(columns=["Unnamed: 0"])
 
-    st.caption(f"Filas: {df_routes.shape[0]} · Columnas: {df_routes.shape[1]}")
+    st.caption(
+        f"Filas: {df_routes.shape[0]} · Columnas: {df_routes.shape[1]}  "
+        f"· CSV cargado desde: `{used_path}`"
+    )
 
     tab_tabla, tab_graficas = st.tabs(["📄 Tabla", "📈 Gráficas"])
 
@@ -212,7 +228,6 @@ def page_dataset():
 
         # 1) Conteo de 0 y 1
         class_counts = df_routes["mask"].value_counts().reset_index()
-        # Ahora las columnas son: ['index', 'mask']
         class_counts.columns = ["mask_value", "Número de imágenes"]
 
         # 2) Mapeamos a etiquetas legibles
@@ -221,7 +236,7 @@ def page_dataset():
             1: "1 – Positivo (con tumor)",
         })
 
-        # 3) Nos quedamos solo con lo que necesita el gráfico
+        # 3) Solo columnas necesarias
         class_counts = class_counts[["Clase", "Número de imágenes"]]
 
         # 4) Pie chart
@@ -239,7 +254,6 @@ def page_dataset():
             f"**Prevalencia global de tumor:** ≈ **{prevalence*100:.2f}%** de las imágenes "
             "son positivas (`mask = 1`)."
         )
-
 
 
 
@@ -819,6 +833,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
