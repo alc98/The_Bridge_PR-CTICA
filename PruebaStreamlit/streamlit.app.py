@@ -696,64 +696,63 @@ def page_cases():
             unsafe_allow_html=True,
         )
 
-
-def page_🔍 Live prediction"():
-st.set_page_config(page_title="Brain MRI Tumor App", page_icon="🧠", layout="wide")
-
-API_URL = "http://localhost:5000/predict"  # URL de tu Flask
-
-def call_flask_model(api_url: str, pil_image: Image.Image):
-    # Convertimos la PIL image a bytes
-    img_bytes = io.BytesIO()
-    pil_image.save(img_bytes, format="PNG")
-    img_bytes.seek(0)
-
-    # Enviamos como multipart/form-data
-    files = {
-        "image": ("mri.png", img_bytes, "image/png")
-    }
-
-    try:
-        response = requests.post(api_url, files=files, timeout=10)
-        response.raise_for_status()
-    except requests.exceptions.RequestException as e:
-        st.error(f"Error al llamar a la API: {e}")
-        return None
-
-    try:
-        return response.json()
-    except ValueError:
-        st.error("La API no devolvió un JSON válido.")
-        return None
-
-st.title("🧠 Detección de tumor en RM cerebral")
-
-uploaded_file = st.file_uploader(
-    "Sube una imagen de RM cerebral (PNG/JPG)", 
-    type=["png", "jpg", "jpeg"]
-)
-
-if uploaded_file is not None:
-    # Mostrar imagen
-    pil_img = Image.open(uploaded_file).convert("RGB")
-    st.image(pil_img, caption="Imagen subida", use_column_width=True)
-
-    if st.button("Analizar imagen"):
-        with st.spinner("Enviando a la API de Flask y analizando..."):
-            result = call_flask_model(API_URL, pil_img)
-
-        if result is not None:
-            # Ajusta estas claves a lo que devuelvas en Flask
-            has_cancer = result.get("has_cancer")
-            prob = result.get("probability")
-            label = result.get("label", "")
-
-            if has_cancer:
-                st.error(f"Resultado: {label} (probabilidad: {prob:.2%})")
-            else:
-                st.success(f"Resultado: {label} (probabilidad: {prob:.2%})")
-
-            st.json(result)
+    def page_🔍 Live prediction"():
+    st.set_page_config(page_title="Brain MRI Tumor App", page_icon="🧠", layout="wide")
+    
+    API_URL = "http://localhost:5000/predict"  # URL de tu Flask
+    
+    def call_flask_model(api_url: str, pil_image: Image.Image):
+        # Convertimos la PIL image a bytes
+        img_bytes = io.BytesIO()
+        pil_image.save(img_bytes, format="PNG")
+        img_bytes.seek(0)
+    
+        # Enviamos como multipart/form-data
+        files = {
+            "image": ("mri.png", img_bytes, "image/png")
+        }
+    
+        try:
+            response = requests.post(api_url, files=files, timeout=10)
+            response.raise_for_status()
+        except requests.exceptions.RequestException as e:
+            st.error(f"Error al llamar a la API: {e}")
+            return None
+    
+        try:
+            return response.json()
+        except ValueError:
+            st.error("La API no devolvió un JSON válido.")
+            return None
+    
+    st.title("🧠 Detección de tumor en RM cerebral")
+    
+    uploaded_file = st.file_uploader(
+        "Sube una imagen de RM cerebral (PNG/JPG)", 
+        type=["png", "jpg", "jpeg"]
+    )
+    
+    if uploaded_file is not None:
+        # Mostrar imagen
+        pil_img = Image.open(uploaded_file).convert("RGB")
+        st.image(pil_img, caption="Imagen subida", use_column_width=True)
+    
+        if st.button("Analizar imagen"):
+            with st.spinner("Enviando a la API de Flask y analizando..."):
+                result = call_flask_model(API_URL, pil_img)
+    
+            if result is not None:
+                # Ajusta estas claves a lo que devuelvas en Flask
+                has_cancer = result.get("has_cancer")
+                prob = result.get("probability")
+                label = result.get("label", "")
+    
+                if has_cancer:
+                    st.error(f"Resultado: {label} (probabilidad: {prob:.2%})")
+                else:
+                    st.success(f"Resultado: {label} (probabilidad: {prob:.2%})")
+    
+                st.json(result)
 
 def page_media():
     st.header("🎥 Visual demo and appointment")
@@ -984,6 +983,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
