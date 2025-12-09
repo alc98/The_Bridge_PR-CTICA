@@ -240,7 +240,7 @@ def page_dataset():
         # 3) Keep only the columns needed for the plot
         class_counts = class_counts[["Class", "Number of images"]]
 
-        # 4) Pie chart
+                # 4) Pie chart
         fig_pie = px.pie(
             class_counts,
             names="Class",
@@ -248,10 +248,11 @@ def page_dataset():
             title="Class distribution: tumor vs no tumor",
         )
 
-        col_1, col_2,col_3 = st.colums(3)
-        with col_2:
+        # Centrar el gráfico usando 3 columnas
+        col1, col2, col3 = st.columns(3)
+        with col2:
             st.plotly_chart(fig_pie, use_container_width=True)
-            
+
         # Global prevalence
         prevalence = df_routes["mask"].mean()
         st.markdown(
@@ -259,6 +260,93 @@ def page_dataset():
             "are positive (`mask = 1`)."
         )
 
+    # =====================================================================
+    #  🔬 Medical + Data Science interpretation section
+    # =====================================================================
+    st.markdown("""
+    ---
+    ## 🧠 Medical Data-Science Interpretation of This Dataset
+
+    ### **What each row represents**
+    Each entry in `route_label.csv` corresponds to **one MRI slice** and includes:
+    - **`image_path`** → the MRI slice  
+    - **`mask_path`** → the segmentation mask (same dimensions, pixels = 0/1)  
+    - **`mask`** → an *image-level classification label*:
+        - **0 = Negative case** → no tumor pixels detected  
+        - **1 = Positive case** → at least some pixels labelled as tumor  
+
+    This lets us treat the dataset both as a **classification** task and a **segmentation** task.
+
+    ---
+
+    ## 📊 What the plots on this page mean
+
+    ### **1. Class Counts**
+    The pie chart shows how many slices are:
+    - **0 – Negative (no tumor present)**
+    - **1 – Positive (tumor present)**
+
+    Interpretation:
+    - A **large negative slice** → dataset dominated by healthy/normal slices  
+    - A **large positive slice** → dataset enriched with tumor slices  
+
+    ---
+
+    ## 📈 Global Prevalence
+    Because the labels are binary 0/1:
+
+    **`prevalence = mean(mask)` = fraction of images containing tumor.**
+
+    This reflects the **image-level prevalence** in your dataset.
+
+    ---
+
+    ## 🩺 How a clinician & ML scientist should read this
+
+    ### **If prevalence is LOW (5–20%)**
+    - Dataset is **imbalanced** (many normal slices, few tumor slices)  
+    - Very realistic for clinical screening  
+    - But ML risks:
+        - Accuracy becomes misleading  
+        - Model may predict “no tumor” most of the time  
+    - Recommended:
+        - Track **recall**, **specificity**, **AUC-ROC**, **AUC-PR**  
+        - Consider **class weighting**, **focal loss**, **oversampling** positives  
+
+    ### **If prevalence is around 50–50**
+    - Dataset is **balanced**  
+    - Easier modeling  
+    - But clinically: may **overrepresent tumor cases** compared to real-world patients  
+    - Recommendation: validate on an external, realistic dataset  
+
+    ### **If prevalence is HIGH (>70–80%)**
+    - Dataset is **mostly pathological cases**  
+    - Useful for:
+        - studying tumor morphology  
+        - segmentation quality  
+        - tumor subtype analysis  
+    - But ML model may **over-predict tumors** in screening settings  
+    - Should add more normal slices before deployment  
+
+    ---
+
+    ## 🎯 Why the `mask` column is extremely useful
+    Even though you have full segmentation masks, this simple 0/1 label allows:
+    - Fast **class balance analysis**  
+    - Fast training of a **binary tumor detection model**  
+    - Stratified statistics (e.g., comparing intensities in positive vs negative slices)  
+
+    Clinically:
+    > “In this cohort, approximately **X% of MRI slices** contain visible tumor tissue according to the segmentation masks. This serves as the baseline rate any detection model must surpass.”
+
+    ---
+
+    ## 📌 Suggested next step
+    Compute **tumor burden per image**:
+    - % of pixels in the mask that are tumor  
+    - Draw a **histogram** or **boxplot**  
+    - This provides a quantitative measure of tumor extent (very useful for ML + radiology)
+    """)
 
 
 
@@ -835,6 +923,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
