@@ -240,7 +240,7 @@ def page_dataset():
         # 3) Keep only the columns needed for the plot
         class_counts = class_counts[["Class", "Number of images"]]
 
-                # 4) Pie chart
+        # 4) Pie chart
         fig_pie = px.pie(
             class_counts,
             names="Class",
@@ -248,108 +248,90 @@ def page_dataset():
             title="Class distribution: tumor vs no tumor",
         )
 
-        # Centrar el gráfico usando 3 columnas
+        # Center the chart using 3 columns
         col1, col2, col3 = st.columns(3)
         with col2:
             st.plotly_chart(fig_pie, use_container_width=True)
 
-        # Global prevalence
+        # Global prevalence (image-level)
         prevalence = df_routes["mask"].mean()
         st.markdown(
-            f"**Global tumor prevalence:** ≈ **{prevalence*100:.2f}%** of the images "
-            "are positive (`mask = 1`)."
+            f"**Global tumor prevalence (image level):** ≈ **{prevalence*100:.2f}%** of the images "
+            "are labelled as positive (`mask = 1`)."
         )
 
     # =====================================================================
-    #  🔬 Medical + Data Science interpretation section
+    #  🔬 Scientific medical + data science interpretation
     # =====================================================================
-    st.markdown("""
+    # Re-compute prevalence for the explanatory text
+    prevalence_global = df_routes["mask"].mean()
+    negative_pct = (1 - prevalence_global) * 100
+    positive_pct = prevalence_global * 100
+
+    st.markdown(f"""
     ---
-    ## 🧠 Medical Data-Science Interpretation of This Dataset
+    ## 🧠 Scientific interpretation of the dataset
 
-    ### **What each row represents**
-    Each entry in `route_label.csv` corresponds to **one MRI slice** and includes:
-    - **`image_path`** → the MRI slice  
-    - **`mask_path`** → the segmentation mask (same dimensions, pixels = 0/1)  
-    - **`mask`** → an *image-level classification label*:
-        - **0 = Negative case** → no tumor pixels detected  
-        - **1 = Positive case** → at least some pixels labelled as tumor  
+    ### Composition of the cohort (image-level)
 
-    This lets us treat the dataset both as a **classification** task and a **segmentation** task.
+    Each row in `route_label.csv` corresponds to a **single brain MRI slice** and contains:
+    - **`image_path`** → path to the MRI slice  
+    - **`mask_path`** → path to the corresponding segmentation mask (binary, 0/1 per pixel)  
+    - **`mask`** → image-level ground-truth label:
+        - **0 = Negative** → no tumor voxels annotated in the mask  
+        - **1 = Positive** → at least one voxel annotated as tumor  
 
-    ---
+    In this dataset:
 
-    ## 📊 What the plots on this page mean
+    - Approximately **{negative_pct:.1f}%** of slices are labelled as  
+      **0 – Negative (no tumor)**.  
+    - Approximately **{positive_pct:.1f}%** of slices are labelled as  
+      **1 – Positive (tumor present)**.  
 
-    ### **1. Class Counts**
-    The pie chart shows how many slices are:
-    - **0 – Negative (no tumor present)**
-    - **1 – Positive (tumor present)**
+    This corresponds to an **image-level tumor prevalence of ~{positive_pct:.1f}%**.
 
-    Interpretation:
-    - A **large negative slice** → dataset dominated by healthy/normal slices  
-    - A **large positive slice** → dataset enriched with tumor slices  
-
-    ---
-
-    ## 📈 Global Prevalence
-    Because the labels are binary 0/1:
-
-    **`prevalence = mean(mask)` = fraction of images containing tumor.**
-
-    This reflects the **image-level prevalence** in your dataset.
+    From a methodological perspective, the dataset is therefore **moderately imbalanced**,
+    with a majority of negative slices and a substantial proportion of positive slices.  
+    Any classification model trained on this cohort should clearly outperform a naive
+    baseline that always predicts the majority class (~{negative_pct:.1f}% accuracy).
 
     ---
 
-    ## 🩺 How a clinician & ML scientist should read this
+    ## Clinical and machine-learning implications
 
-    ### **If prevalence is LOW (5–20%)**
-    - Dataset is **imbalanced** (many normal slices, few tumor slices)  
-    - Very realistic for clinical screening  
-    - But ML risks:
-        - Accuracy becomes misleading  
-        - Model may predict “no tumor” most of the time  
-    - Recommended:
-        - Track **recall**, **specificity**, **AUC-ROC**, **AUC-PR**  
-        - Consider **class weighting**, **focal loss**, **oversampling** positives  
+    - The enrichment in tumor-positive slices (~{positive_pct:.1f}%) is higher than what is
+      typically observed in routine clinical practice, where most MRIs are normal.
+      This is desirable for **model development**, as it provides enough positive examples
+      to learn tumor-related patterns and to train segmentation networks.
 
-    ### **If prevalence is around 50–50**
-    - Dataset is **balanced**  
-    - Easier modeling  
-    - But clinically: may **overrepresent tumor cases** compared to real-world patients  
-    - Recommendation: validate on an external, realistic dataset  
+    - However, because the data are not perfectly balanced, evaluation metrics should not
+      rely solely on accuracy. In particular, it is important to report:
+        - **Sensitivity / recall for positive cases (mask = 1)**  
+        - **Specificity for negative cases (mask = 0)**  
+        - **AUC-ROC and, ideally, AUC-PR**, which are more informative under class imbalance.
 
-    ### **If prevalence is HIGH (>70–80%)**
-    - Dataset is **mostly pathological cases**  
-    - Useful for:
-        - studying tumor morphology  
-        - segmentation quality  
-        - tumor subtype analysis  
-    - But ML model may **over-predict tumors** in screening settings  
-    - Should add more normal slices before deployment  
+    - If a model underestimates tumors, techniques such as **class-weighted loss functions**,
+      **focal loss**, or **oversampling of positive slices** may be considered to improve
+      detection performance.
 
     ---
 
-    ## 🎯 Why the `mask` column is extremely useful
-    Even though you have full segmentation masks, this simple 0/1 label allows:
-    - Fast **class balance analysis**  
-    - Fast training of a **binary tumor detection model**  
-    - Stratified statistics (e.g., comparing intensities in positive vs negative slices)  
+    ## Role of the `mask` label
 
-    Clinically:
-    > “In this cohort, approximately **X% of MRI slices** contain visible tumor tissue according to the segmentation masks. This serves as the baseline rate any detection model must surpass.”
+    Although voxel-wise segmentation masks are available via `mask_path`, the binary
+    `mask` column provides a compact **image-level label** that enables:
 
-    ---
+    - Rapid assessment of **class balance** (as visualized in the pie chart).  
+    - Training of a **binary tumor vs. no-tumor classifier** as a first-stage screening model.  
+    - Stratified analyses, for example comparing intensity distributions or radiomic features
+      between positive and negative slices.
 
-    ## 📌 Suggested next step
-    Compute **tumor burden per image**:
-    - % of pixels in the mask that are tumor  
-    - Draw a **histogram** or **boxplot**  
-    - This provides a quantitative measure of tumor extent (very useful for ML + radiology)
+    From a clinical research standpoint, one can summarize the cohort as:
+
+    > "In this dataset, approximately **{positive_pct:.1f}% of MRI slices** contain visible
+    > tumor tissue according to expert segmentation. This prevalence defines the baseline
+    > that any automated detection system must surpass in order to be clinically useful."
     """)
-
-
-
 
 
 
@@ -923,6 +905,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
