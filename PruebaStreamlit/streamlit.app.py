@@ -217,7 +217,7 @@ def page_dataset():
     # ===== TABLE =====
     with tab_table:
         st.subheader("Overview of `route_label.csv`")
-        st.dataframe(df_routes[-1:])
+        st.dataframe(df_routes[:,-1:])
 
     # ===== PLOTS =====
     with tab_plots:
@@ -827,6 +827,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
