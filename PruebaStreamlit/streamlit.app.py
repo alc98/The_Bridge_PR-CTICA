@@ -268,7 +268,7 @@ def page_dataset():
     positive_pct = prevalence_global * 100
 
     st.markdown(f"""
----
+
 ## 🧠 Scientific interpretation of the dataset
 
 ### 1. Cohort composition (image-level class distribution)
@@ -287,7 +287,7 @@ with a dominant negative class and a substantial proportion of positive slices.
 Therefore, **any classification model** must outperform a trivial baseline predicting 
 the majority class (≈ **{negative_pct:.1f}% accuracy**) to demonstrate meaningful discriminative value.
 
----
+
 
 ### 2. Clinical and machine-learning implications
 
@@ -827,6 +827,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
