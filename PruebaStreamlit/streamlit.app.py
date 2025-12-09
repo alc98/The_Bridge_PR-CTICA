@@ -269,7 +269,7 @@ def page_dataset():
     positive_pct = prevalence_global * 100
     
     st.markdown(f"""
-    ---
+    
     ## 🧠 Scientific interpretation of the dataset
     
     ### 1. Cohort composition (image-level class distribution)
@@ -288,7 +288,7 @@ def page_dataset():
     Therefore, **any classification model** must outperform a trivial baseline predicting 
     the majority class (≈ **{negative_pct:.1f}% accuracy**) to demonstrate meaningful discriminative value.
     
-    ---
+    
     
     ## 2. Clinical and machine-learning implications
     
@@ -307,7 +307,7 @@ def page_dataset():
         - **focal loss**,  
         - or **oversampling of positive slices**.
     
-    ---
+    
     
     ## 3. Utility of the `mask` column
     
@@ -323,13 +323,7 @@ def page_dataset():
     > *"In this dataset, approximately {positive_pct:.1f}% of MRI slices contain visible tumor tissue.  
     > This prevalence establishes the baseline that any automated detection model must exceed to be clinically relevant."*
     
-    ---
     
-    ## 4. Suggested next step
-    Compute **tumor burden per slice** (percentage of pixels labelled as tumor).  
-    Displaying its distribution via histograms or boxplots gives richer insight into lesion size 
-    and heterogeneity — highly valuable for both ML and radiological interpretation.
-    """)
 
 
 
@@ -900,6 +894,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
