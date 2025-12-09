@@ -261,7 +261,7 @@ def page_dataset():
         # ===== TABLE =====
         with tab_table:
             st.subheader("Overview of `route_label.csv`")
-            st.dataframe(df_routes[df_routes.columns[]])
+            st.dataframe(df_routes[df_routes.columns])
     # =====================================================================
     #  🔬 Scientific medical + data science interpretation
     # =====================================================================
@@ -829,6 +829,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
