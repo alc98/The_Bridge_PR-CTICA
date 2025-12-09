@@ -166,6 +166,112 @@ def page_intro():
         motivations for using deep learning in neuro-oncology.
         """
     )
+def page_dataset():
+    st.header("📊 Database analysis")
+
+    if df.empty:
+        st.error("`data.csv` was not found. Place it next to `app.py` and reload the page.")
+        return
+
+    st.caption(f"Rows: {df.shape[0]} · Columns: {df.shape[1]}")
+
+    st.markdown(
+        """
+        From an epidemiological and data-science point of view, this dataset represents
+        a simplified cohort. In real projects we would also collect variables such as:
+        - Age, presenting symptoms and performance status.
+        - Tumor grade, histology and molecular markers (e.g. IDH, MGMT, 1p/19q).
+        - Treatment (surgery, radiotherapy, chemotherapy, targeted therapies).
+        - Outcomes such as progression-free and overall survival.
+        These additional features enable models not only for **detection**, but also for
+        **prognosis**, **treatment selection** and **response evaluation**.
+        """
+    )
+
+    tab_tabla, tab_graficas = st.tabs(["📄 Table", "📈 Charts"])
+
+    with tab_tabla:
+        st.subheader("Dataset overview")
+        st.dataframe(df)
+
+    with tab_graficas:
+        if GENDER_COL not in df.columns:
+            st.info(f"The column `{GENDER_COL}` was not found in the CSV.")
+            return
+
+        st.markdown("### Distribution by gender")
+
+        df_count = df.groupby(GENDER_COL).size().reset_index(name="count")
+
+        fig_pie = px.pie(
+            df_count,
+            values="count",
+            names=GENDER_COL,
+            title="Distribution of patients by gender"
+        )
+        st.plotly_chart(fig_pie, use_container_width=True)
+
+        st.caption(
+            "Differences in gender distribution can reflect real epidemiological trends, "
+            "but they may also be influenced by sample size, referral patterns or "
+            "inclusion criteria of the study."
+        )
+
+        if TUMOR_COL in df.columns:
+            st.markdown("### Tumor probability by gender")
+
+            df_avg = df.groupby(GENDER_COL)[TUMOR_COL].mean().reset_index(name="Tumor_Prob")
+
+            fig_bar = px.bar(
+                df_avg,
+                x=GENDER_COL,
+                y="Tumor_Prob",
+                title="Average tumor probability by gender",
+                labels={"Tumor_Prob": "Tumor probability"}
+            )
+            st.plotly_chart(fig_bar, use_container_width=True)
+
+            st.caption(
+                "Gender is usually not sufficient to make individual predictions by itself, "
+                "but it can be useful to describe the cohort and to check that the model's "
+                "performance is not systematically worse in a given subgroup."
+            )
+
+            st.markdown("### Query by gender")
+            genders = df[GENDER_COL].dropna().unique().tolist()
+            sel_gender = st.selectbox("Select gender", genders)
+
+            prob_sel = df_avg.loc[df_avg[GENDER_COL] == sel_gender, "Tumor_Prob"].values
+            if len(prob_sel) > 0:
+                st.success(
+                    f"Estimated average tumor probability for **{sel_gender}**: "
+                    f"**{prob_sel[0]*100:.2f}%**"
+                )
+
+            st.markdown("### Global class distribution (tumor vs no tumor)")
+
+            class_counts = df[TUMOR_COL].value_counts().reset_index()
+            class_counts.columns = ["Class", "Count"]
+
+            fig_bool = px.bar(
+                class_counts,
+                x="Class",
+                y="Count",
+                title="Number of patients per class (0 = no tumor, 1 = tumor)",
+                text="Count"
+            )
+            st.plotly_chart(fig_bool, use_container_width=True)
+
+            st.caption(
+                "If one class is much more frequent than the other (class imbalance), "
+                "we may need strategies such as re-weighting, resampling or specialized "
+                "loss functions to avoid a model that simply predicts the majority class."
+            )
+        else:
+            st.info(
+                f"The column `{TUMOR_COL}` was not found to compute probabilities "
+                "or the class distribution."
+            )
 
 def page_model():
     st.header("🧬 Deep learning model")
@@ -878,6 +984,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
