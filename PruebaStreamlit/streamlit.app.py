@@ -256,141 +256,74 @@ def page_dataset():
         # Global prevalence (image-level)
         prevalence = df_routes["mask"].mean()
         st.markdown(
-            f"**Global tumor prevalence (image level):** ≈ **{prevalence*100:.2f}%** of the images "
-            "are labelled as positive (`mask = 1`)."
+            f"**Global tumor prevalence (image level):** ≈ **{prevalence*100:.2f}%** "
+            "of the images are labelled as positive (`mask = 1`)."
         )
 
-
-   # =====================================================================
+    # =====================================================================
     #  🔬 Scientific medical + data science interpretation
     # =====================================================================
     prevalence_global = df_routes["mask"].mean()
     negative_pct = (1 - prevalence_global) * 100
     positive_pct = prevalence_global * 100
-    
+
     st.markdown(f"""
-    
-    ## 🧠 Scientific interpretation of the dataset
-    
-    ### 1. Cohort composition (image-level class distribution)
-    
-    In this dataset:
-    
-    - **≈ {negative_pct:.1f}%** of MRI slices are labelled as  
-      **0 – Negative (no tumor)**  
-    - **≈ {positive_pct:.1f}%** of MRI slices are labelled as  
-      **1 – Positive (tumor present)**  
-    
-    This yields an **image-level tumor prevalence of approximately {positive_pct:.1f}%**.
-    
-    From a methodological standpoint, this indicates a **moderately imbalanced dataset**, 
-    with a dominant negative class and a substantial proportion of positive slices.  
-    Therefore, **any classification model** must outperform a trivial baseline predicting 
-    the majority class (≈ **{negative_pct:.1f}% accuracy**) to demonstrate meaningful discriminative value.
-    
-    
-    
-    ## 2. Clinical and machine-learning implications
-    
-    - The enrichment in tumor-positive slices (≈ {positive_pct:.1f}%) is higher than in routine clinical cohorts, 
-      which usually contain far fewer tumors.  
-      This is beneficial for model development because it provides enough positive examples to learn tumor morphology.
-    
-    - Due to the moderate imbalance, evaluation should not rely solely on accuracy.  
-      More informative metrics include:  
-        - **Sensitivity / recall** for positive cases  
-        - **Specificity** for negative cases  
-        - **AUC-ROC and AUC-PR**
-    
-    - If the model tends to under-detect tumors, consider using:  
-        - **class-weighted loss**,  
-        - **focal loss**,  
-        - or **oversampling of positive slices**.
-    
-    
-    
-    ## 3. Utility of the `mask` column
-    
-    Although full voxel-level segmentation masks are available via `mask_path`, this binary 
-    image-level label (`mask`) enables:
-    
-    - Rapid assessment of **class distribution**  
-    - Training of a **binary tumor vs. no-tumor classifier**  
-    - Stratified analyses (e.g., intensity or radiomic differences between classes)
-    
-    Clinically, one may summarize the cohort as:
-    
-    > *"In this dataset, approximately {positive_pct:.1f}% of MRI slices contain visible tumor tissue.  
-    > This prevalence establishes the baseline that any automated detection model must exceed to be clinically relevant."*
-    
-    
+---
+## 🧠 Scientific interpretation of the dataset
+
+### 1. Cohort composition (image-level class distribution)
+
+In this dataset:
+
+- **≈ {negative_pct:.1f}%** of MRI slices are labelled as  
+  **0 – Negative (no tumor)**  
+- **≈ {positive_pct:.1f}%** of MRI slices are labelled as  
+  **1 – Positive (tumor present)**  
+
+This yields an **image-level tumor prevalence of approximately {positive_pct:.1f}%**.
+
+From a methodological standpoint, this indicates a **moderately imbalanced dataset**, 
+with a dominant negative class and a substantial proportion of positive slices.  
+Therefore, **any classification model** must outperform a trivial baseline predicting 
+the majority class (≈ **{negative_pct:.1f}% accuracy**) to demonstrate meaningful discriminative value.
+
+---
+
+### 2. Clinical and machine-learning implications
+
+- The enrichment in tumor-positive slices (≈ {positive_pct:.1f}%) is higher than in routine clinical cohorts, 
+  which usually contain far fewer tumors. This is advantageous for model development, as it provides a 
+  sufficient number of positive examples to learn tumor-related patterns and to train segmentation models.
+
+- Because of the moderate class imbalance, evaluation should not rely solely on accuracy. More informative metrics are:  
+  - **Sensitivity / recall** for positive cases (`mask = 1`)  
+  - **Specificity** for negative cases (`mask = 0`)  
+  - **AUC-ROC** and **AUC-PR**, which better capture performance under imbalance.
+
+- If the model tends to under-detect tumors, one may consider:  
+  - **Class-weighted loss functions**  
+  - **Focal loss**  
+  - **Oversampling of positive slices** or undersampling of negatives.
+
+
+### 3. Utility of the `mask` column
+
+Although voxel-wise segmentation masks are available via `mask_path`, the binary image-level label (`mask`) enables:
+
+- Rapid assessment of **class distribution** (as visualised in the pie chart).  
+- Training of a **binary tumor vs. no-tumor classifier** as a screening or pre-filtering stage.  
+- Stratified analyses, for example comparing intensity distributions or radiomic features between positive and negative slices.
+
+From a clinical research perspective, the cohort can be succinctly described as:
+
+> *"In this dataset, approximately {positive_pct:.1f}% of MRI slices contain visible tumor tissue according to expert segmentation. This prevalence establishes the baseline that any automated detection model must exceed in order to be clinically relevant."*
+
+""")
 
 
 
-from PIL import Image
-
-IMG_TARGET_SIZE = (320, 320)  # ancho, alto común para todas las imágenes
 
 
-def resize_to_common(img, size=IMG_TARGET_SIZE):
-    """Resize image to a common size for display."""
-    return img.resize(size, Image.BILINEAR)
-
-
-def page_cases(): 
-    # =====================
-    # Textos en HTML
-    # =====================
-    intro_html = """
-    <p>
-        We display examples of <strong>brain MRI slices</strong> with and without
-        <strong>tumor segmentation</strong>. For each case you can see:
-    </p>
-    <ol>
-        <li><strong>Original MRI</strong></li>
-        <li><strong>Binary tumor mask</strong> (white = tumor, black = background)</li>
-        <li><strong>MRI with the mask overlaid</strong> (only for tumor cases)</li>
-    </ol>
-    """
-
-    interp_tumor_html = """
-    <h4>Clinical / data-analyst interpretation (with tumor)</h4>
-    <ul>
-        <li><strong>Region of interest:</strong> a focal hyperintense lesion is visible within the brain parenchyma. The binary mask highlights all pixels classified as tumor.</li>
-        <li><strong>Segmentation concept:</strong> every white pixel in the mask corresponds to voxels that the model (or manual annotation) considers part of the tumor.</li>
-        <li><strong>Visual benefit:</strong> the overlaid image makes it easier to appreciate tumor borders, mass effect and the relationship to surrounding tissue.</li>
-        <li><strong>Data perspective:</strong> this slice is a <em>positive sample</em>; the mask provides dense supervision for training segmentation models (Dice, IoU, pixel-wise accuracy, etc.).</li>
-    </ul>
-    """
-
-    interp_no_tumor_html = """
-    <h4>Clinical / data-analyst interpretation (no visible tumor)</h4>
-    <ul>
-        <li><strong>Overall impression:</strong> normal-appearing brain MRI for this slice, with no focal mass, no obvious edema and preserved symmetry.</li>
-        <li><strong>Segmentation point of view:</strong> this is a <em>negative sample</em>; the corresponding mask is empty, so no pixels are labelled as tumor.</li>
-        <li><strong>Why it matters:</strong> negative cases are crucial to reduce false positives and to teach the network what healthy anatomy looks like.</li>
-        <li><strong>Expected model behavior:</strong> the model should assign low tumor probability to all pixels in this image. Any high activation would be a potential false positive.</li>
-    </ul>
-    """
-
-    note_tumor_html = """
-    <p style="text-align:center; font-size:0.9rem;">
-        Note: these are 2D slices with visible tumor. In clinical practice, decisions are based on full 3D volumes,
-        multiple sequences (T1, T2, FLAIR, contrast) and the patient&apos;s clinical history.
-    </p>
-    """
-
-    note_no_tumor_html = """
-    <p style="text-align:center; font-size:0.9rem;">
-        Note: in these cases no tumor is visible on the displayed slice. The effective tumor mask is empty,
-        so MRI with and without mask look identical. Comparing healthy and tumor slices is key to training
-        and validating the model.
-    </p>
-    """
-
-    # =====================
-    # Cabecera
-    # =====================
 def page_cases(): 
     st.header("🖼️ Ejemplos de tumores cerebrales en RM")
 
@@ -894,6 +827,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
