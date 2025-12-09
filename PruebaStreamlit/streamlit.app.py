@@ -166,13 +166,14 @@ def page_intro():
         motivations for using deep learning in neuro-oncology.
         """
     )
-from pathlib import Path
-import pandas as pd
-import plotly.express as px
 import streamlit as st
-# (estos imports seguramente ya los tienes arriba)
+import pandas as pd
+from pathlib import Path
+import plotly.express as px
 
-def page_dataset(): 
+BASE_DIR = Path(__file__).resolve().parent
+
+def page_dataset():  
     st.header("📊 Análisis de la base de datos")
 
     # Ruta al CSV de las imágenes
@@ -188,6 +189,7 @@ def page_dataset():
         )
         return
 
+    # Quitamos índice si viene en el CSV
     if "Unnamed: 0" in df_routes.columns:
         df_routes = df_routes.drop(columns=["Unnamed: 0"])
 
@@ -200,7 +202,7 @@ def page_dataset():
         st.subheader("Vista general de `route_label.csv`")
         st.dataframe(df_routes)
 
-     # ===== GRÁFICAS =====
+    # ===== GRÁFICAS =====
     with tab_graficas:
         if "mask" not in df_routes.columns:
             st.info("El CSV no tiene una columna llamada `mask`.")
@@ -208,20 +210,21 @@ def page_dataset():
 
         st.subheader("Distribución de clases (0 = negativo, 1 = positivo)")
 
-        # Mapeamos 0/1 a etiquetas legibles
-        df_routes["Clase"] = df_routes["mask"].map({
+        # 1) Conteo de 0 y 1
+        class_counts = df_routes["mask"].value_counts().reset_index()
+        # Ahora las columnas son: ['index', 'mask']
+        class_counts.columns = ["mask_value", "Número de imágenes"]
+
+        # 2) Mapeamos a etiquetas legibles
+        class_counts["Clase"] = class_counts["mask_value"].map({
             0: "0 – Negativo (sin tumor)",
-            1: "1 – Positivo (con tumor)"
+            1: "1 – Positivo (con tumor)",
         })
 
-        class_counts = (
-            df_routes["Clase"]
-            .value_counts()
-            .reset_index()
-            .rename(columns={"index": "Clase", "Clase": "Número de imágenes"})
-        )
+        # 3) Nos quedamos solo con lo que necesita el gráfico
+        class_counts = class_counts[["Clase", "Número de imágenes"]]
 
-        # Pie plot distribución de clases
+        # 4) Pie chart
         fig_pie = px.pie(
             class_counts,
             names="Clase",
@@ -230,12 +233,24 @@ def page_dataset():
         )
         st.plotly_chart(fig_pie, use_container_width=True)
 
-        # Prevalencia global (opcional)
+        # Prevalencia global
         prevalence = df_routes["mask"].mean()
         st.markdown(
             f"**Prevalencia global de tumor:** ≈ **{prevalence*100:.2f}%** de las imágenes "
-            "son positivas (máscara = 1)."
+            "son positivas (`mask = 1`)."
         )
+
+
+
+
+
+
+
+
+
+
+
+
 
 from PIL import Image
 
@@ -804,6 +819,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
