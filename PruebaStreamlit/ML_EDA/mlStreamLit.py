@@ -13,18 +13,17 @@ from xgboost import XGBRegressor
 import matplotlib.pyplot as plt
 
 
-# ===========================
-# 1. Carga de datos
-# ===========================
+# ==========================================================
+# 1. CARGA ROBUSTA DEL CSV
+# ==========================================================
 @st.cache_data
 def load_data() -> pd.DataFrame:
     """
     Carga el CSV de housing probando varias rutas.
-    Si no lo encuentra, pedirá al usuario que suba el fichero.
+    Si no lo encuentra, permite al usuario subir el archivo.
     """
     base_dir = Path(__file__).resolve().parent
 
-    # Candidatos de ruta según la estructura que has ido usando
     candidate_paths = [
         base_dir / "housing_price_dataset.csv",
         base_dir / "housing_price_dataset_cleaned.csv",
@@ -38,10 +37,10 @@ def load_data() -> pd.DataFrame:
             st.info(f"📄 Cargando dataset desde: `{path}`")
             return pd.read_csv(path)
 
-    # Si llegamos aquí, no hemos encontrado el archivo en disco
+    # Si no se encuentra en disco, se pide subirlo manualmente
     st.warning(
         "⚠️ No se ha encontrado el archivo de datos en las rutas esperadas.\n\n"
-        "Puedes subir el CSV manualmente para continuar."
+        "Sube tu fichero `housing_price_dataset.csv` para continuar."
     )
 
     uploaded = st.file_uploader(
@@ -53,30 +52,29 @@ def load_data() -> pd.DataFrame:
         st.success("✅ Archivo subido correctamente, cargando datos...")
         return pd.read_csv(uploaded)
 
-    # Si todavía no hay archivo, paramos la ejecución de la app
-    st.stop()
+    st.stop()  # Detiene la app hasta que haya datos
 
 
-
-# ===========================
-# 2. Entrenamiento del modelo (XGBoost) + split
-# ===========================
+# ==========================================================
+# 2. ENTRENAR MODELO XGBOOST + PIPELINE
+# ==========================================================
 @st.cache_resource
 def train_model(df: pd.DataFrame):
     """
-    Feature engineering, split train/test y entrenamiento de XGBRegressor
-    dentro de un Pipeline con ColumnTransformer.
-    Devuelve:
-      - pipeline entrenado
-      - X_test, y_test para evaluar errores
+    - Aplica feature engineering.
+    - Define preprocessor (ColumnTransformer).
+    - Entrena un XGBRegressor dentro de un Pipeline.
+    - Devuelve el pipeline entrenado y el split de test.
     """
 
-    # --- Feature engineering ---
     df_fe = df.copy()
+
+    # ===== Feature engineering binario =====
     df_fe["Has_2plus_Bath"] = (df_fe["Bathrooms"] >= 2).astype(int)
     df_fe["Has_3plus_Bed"] = (df_fe["Bedrooms"] >= 3).astype(int)
     df_fe["New_House"] = (df_fe["YearBuilt"] >= 2000).astype(int)
 
+    # ===== Definimos X e y =====
     X = df_fe.drop(columns=["Price"])
     y = df_fe["Price"]
 
@@ -104,7 +102,7 @@ def train_model(df: pd.DataFrame):
         random_state=42
     )
 
-    # --- Modelo "mejor" (XGBRegressor, parámetros razonables) ---
+    # ===== Modelo XGBoost (mejor modelo) =====
     model = XGBRegressor(
         n_estimators=200,
         max_depth=4,
@@ -125,12 +123,12 @@ def train_model(df: pd.DataFrame):
 
     pipe.fit(X_train, y_train)
 
-    return pipe, X_test, y_test, X, y
+    return pipe, X_train, X_test, y_train, y_test, X, y
 
 
-# ===========================
-# 3. App Streamlit
-# ===========================
+# ==========================================================
+# 3. APP STREAMLIT
+# ==========================================================
 def main():
     st.set_page_config(
         page_title="House Price Predictor",
@@ -142,28 +140,31 @@ def main():
 
     st.markdown(
         """
-        Esta app entrena un modelo de **XGBoost** sobre el dataset de viviendas
+        Esta app entrena un modelo de **XGBoost** sobre un dataset de viviendas
         y te permite introducir manualmente las características de una casa para
-        estimar su **precio de venta**.  
-        
-        Debajo, se muestran:
-        - Métricas de error en test (MAE, RMSE, R²).  
-        - Una “matriz de fallo” (precio real vs predicho, binned).  
-        - Una tabla con ejemplos de predicción y su error.
+        estimar su **precio de venta**.
+
+        Debajo puedes ver:
+        - 📏 Métricas de error en test (*MAE, RMSE, R²*).
+        - 🧩 Una “matriz de fallo” (precio real vs predicho, agrupados en rangos).
+        - 📃 Una tabla con ejemplos de predicción y su error.
         """
     )
 
-    # 1) Cargar datos y modelo
+    # 1) Cargar datos y entrenar modelo
     df = load_data()
-    pipe, X_test, y_test, X_full, y_full = train_model(df)
+    pipe, X_train, X_test, y_train, y_test, X_full, y_full = train_model(df)
 
-    # Para los rangos de los sliders usamos el df original
+    # RANGOS reales del dataset para SLIDERS
     min_sqft, max_sqft = int(df["SquareFeet"].min()), int(df["SquareFeet"].max())
     min_bed, max_bed = int(df["Bedrooms"].min()), int(df["Bedrooms"].max())
     min_bath, max_bath = int(df["Bathrooms"].min()), int(df["Bathrooms"].max())
     min_year, max_year = int(df["YearBuilt"].min()), int(df["YearBuilt"].max())
     neighborhoods = sorted(df["Neighborhood"].unique())
 
+    # ==========================================================
+    # 3.1. PREDICCIÓN MANUAL (SLIDERS + BINARIOS 0/1)
+    # ==========================================================
     st.sidebar.header("🧮 Introduce los datos de la vivienda")
 
     sqft = st.sidebar.slider(
@@ -200,36 +201,37 @@ def main():
     )
 
     st.sidebar.markdown("---")
+    st.sidebar.subheader("Variables binarias (0 / 1)")
+
+    # Checkboxes para 0/1 (permite control manual, pero por defecto coherentes)
+    has_2plus_bath = st.sidebar.checkbox(
+        "Has_2plus_Bath (baños ≥ 2)",
+        value=(bathrooms >= 2)
+    )
+    has_3plus_bed = st.sidebar.checkbox(
+        "Has_3plus_Bed (habitaciones ≥ 3)",
+        value=(bedrooms >= 3)
+    )
+    new_house = st.sidebar.checkbox(
+        "New_House (YearBuilt ≥ 2000)",
+        value=(year_built >= 2000)
+    )
+
+    st.sidebar.markdown("---")
     st.sidebar.markdown("Cuando estés listo, pulsa el botón para predecir.")
 
-    # Construimos el dataframe de 1 fila con los mismos nombres de columnas que X
+    # Construimos el DataFrame con exactamente las columnas esperadas
     input_dict = {
+        "Neighborhood": [neighborhood],
         "SquareFeet": [sqft],
         "Bedrooms": [bedrooms],
         "Bathrooms": [bathrooms],
         "YearBuilt": [year_built],
-        "Neighborhood": [neighborhood],
-        # Estas columnas NO las necesita el pipeline como entrada,
-        # porque se recalculan en train_model(). Aquí puedes omitirlas,
-        # o poner los mismos cálculos si quieres consistencia explícita.
-        "Has_2plus_Bath": [(bathrooms >= 2)],
-        "Has_3plus_Bed": [(bedrooms >= 3)],
-        "New_House": [(year_built >= 2000)],
+        "Has_2plus_Bath": [int(has_2plus_bath)],
+        "Has_3plus_Bed": [int(has_3plus_bed)],
+        "New_House": [int(new_house)],
     }
-
-    # Pero ojo: el preprocessor creado en train_model solo espera:
-    # ["Neighborhood"] + numeric_features.
-    # Así que nos quedamos solo con esas columnas:
-    input_df = pd.DataFrame(input_dict)[[
-        "Neighborhood",
-        "SquareFeet",
-        "Bedrooms",
-        "Bathrooms",
-        "YearBuilt",
-        "Has_2plus_Bath",
-        "Has_3plus_Bed",
-        "New_House",
-    ]]
+    input_df = pd.DataFrame(input_dict)
 
     col_pred, col_info = st.columns([2, 1])
 
@@ -238,10 +240,9 @@ def main():
 
         if st.button("Calcular predicción"):
             pred_price = pipe.predict(input_df)[0]
-            st.success(f"Precio estimado: **{pred_price:,.0f}** unidades monetarias")
-            st.caption("(*La moneda depende de cómo esté definido tu dataset: €, $, etc.*)")
+            st.success(f"💰 Precio estimado: **{pred_price:,.0f}** (unidad monetaria del dataset)")
         else:
-            st.info("Introduce los valores en la barra lateral y pulsa el botón para predecir.")
+            st.info("Introduce los valores en la barra lateral y pulsa el botón para hacer una predicción.")
 
     with col_info:
         st.subheader("📊 Info rápida del dataset")
@@ -250,11 +251,12 @@ def main():
         st.metric("M² medio", f"{df['SquareFeet'].mean():.1f}")
 
     st.markdown("---")
+
+    # ==========================================================
+    # 3.2. MÉTRICAS GLOBALES Y MATRIZ DE FALLO
+    # ==========================================================
     st.header("📉 Rendimiento del modelo en el conjunto de test")
 
-    # ===========================
-    #  Métricas + matriz de fallo
-    # ===========================
     y_pred_test = pipe.predict(X_test)
 
     mae = mean_absolute_error(y_test, y_pred_test)
@@ -266,23 +268,21 @@ def main():
     c2.metric("RMSE", f"{rmse:,.0f}")
     c3.metric("R² en test", f"{r2:.3f}")
 
-    st.markdown("### 🔢 Matriz de fallo (precio real vs precio predicho, binned)")
+    st.markdown("### 🔢 Matriz de fallo (precio real vs precio predicho, por rangos)")
 
     # Bineamos precios reales y predichos en cuartiles
-    # (puedes ajustar el nº de bins si quieres más detalle)
     n_bins = 4
     true_bins = pd.qcut(y_test, q=n_bins, duplicates="drop")
     pred_bins = pd.qcut(y_pred_test, q=n_bins, duplicates="drop")
 
     conf_mat = pd.crosstab(true_bins, pred_bins)
     st.caption(
-        "Filas: rango de precios **reales**, "
-        "Columnas: rango de precios **predichos**. "
-        "Los valores son conteos de casas en cada combinación."
+        "Filas: rangos de **precio real** · Columnas: rangos de **precio predicho**.\n"
+        "Los valores son el número de viviendas en cada combinación."
     )
     st.dataframe(conf_mat, use_container_width=True)
 
-    # Heatmap simple
+    # Heatmap simple con matplotlib
     fig, ax = plt.subplots(figsize=(6, 4))
     im = ax.imshow(conf_mat.values, cmap="Blues")
 
@@ -302,9 +302,9 @@ def main():
     fig.tight_layout()
     st.pyplot(fig)
 
-    # ===========================
-    #  Tabla de ejemplos: real, predicho, error
-    # ===========================
+    # ==========================================================
+    # 3.3. TABLA DE ERRORES POR VIVIENDA
+    # ==========================================================
     st.markdown("### 📃 Ejemplos de predicción vs realidad")
 
     comp_df = pd.DataFrame({
@@ -323,4 +323,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
