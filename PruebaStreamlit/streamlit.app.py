@@ -247,8 +247,11 @@ def page_dataset():
             values="Number of images",
             title="Class distribution: tumor vs no tumor",
         )
-        st.plotly_chart(fig_pie, use_container_width=True)
 
+        col_1, col_2,col_3 = st.colums(3)
+        with col_2:
+            st.plotly_chart(fig_pie, use_container_width=True)
+            
         # Global prevalence
         prevalence = df_routes["mask"].mean()
         st.markdown(
@@ -832,6 +835,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
