@@ -200,50 +200,41 @@ def page_dataset():
         st.subheader("Vista general de `route_label.csv`")
         st.dataframe(df_routes)
 
-    # ===== GRÁFICAS =====
-    # Conteo 0 / 1
+     # ===== GRÁFICAS =====
+    with tab_graficas:
+        if "mask" not in df_routes.columns:
+            st.info("El CSV no tiene una columna llamada `mask`.")
+            return
+
+        st.subheader("Distribución de clases (0 = negativo, 1 = positivo)")
+
+        # Mapeamos 0/1 a etiquetas legibles
+        df_routes["Clase"] = df_routes["mask"].map({
+            0: "0 – Negativo (sin tumor)",
+            1: "1 – Positivo (con tumor)"
+        })
+
         class_counts = (
-            df_routes["mask"]
+            df_routes["Clase"]
             .value_counts()
-            .rename(index={0: "0 – sin tumor", 1: "1 – con tumor"})
             .reset_index()
-            .rename(columns={"index": "Clase", "mask": "Número de imágenes"})
+            .rename(columns={"index": "Clase", "Clase": "Número de imágenes"})
         )
 
-        fig_bar = px.bar(
-            class_counts,
-            x="Clase",
-            y="Número de imágenes",
-            text="Número de imágenes",
-            title="Número de imágenes con y sin tumor",
-        )
-        st.plotly_chart(fig_bar, use_container_width=True)
-
-        # Pie de proporciones
+        # Pie plot distribución de clases
         fig_pie = px.pie(
             class_counts,
             names="Clase",
             values="Número de imágenes",
-            title="Proporción de casos con y sin tumor",
+            title="Distribución de clases: tumor vs no tumor",
         )
         st.plotly_chart(fig_pie, use_container_width=True)
 
-        # Prevalencia global
-        prevalence = df_routes["mask"].mean()  # media de 0/1 = % de tumor
+        # Prevalencia global (opcional)
+        prevalence = df_routes["mask"].mean()
         st.markdown(
-            f"**Prevalencia global de tumor en el dataset:** "
-            f"≈ **{prevalence*100:.2f}%** de las imágenes tienen máscara positiva."
-        )
-
-        st.markdown(
-            """
-            - `mask = 0` → imagen sin tumor segmentado (negativa).  
-            - `mask = 1` → imagen con tumor segmentado (positiva).  
-
-            Desde el punto de vista de *machine learning*, esto es un problema de
-            **clasificación binaria** (tumor / no tumor) y además sirve como base
-            para **segmentación** usando las máscaras (`mask_path`).
-            """
+            f"**Prevalencia global de tumor:** ≈ **{prevalence*100:.2f}%** de las imágenes "
+            "son positivas (máscara = 1)."
         )
 
 from PIL import Image
@@ -813,6 +804,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
