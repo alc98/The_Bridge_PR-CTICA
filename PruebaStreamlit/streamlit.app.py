@@ -956,6 +956,7 @@ def main():
     menu = [
         "🏠 Introduction",
         "🧬 Deep learning model",
+        "📊 Database and charts"
         "🖼️ Example cases",
         "🔍 Live prediction",
         "🎥 Media and appointment",
@@ -984,6 +985,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
