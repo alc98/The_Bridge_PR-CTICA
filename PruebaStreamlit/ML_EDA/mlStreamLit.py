@@ -14,45 +14,63 @@ import matplotlib.pyplot as plt
 
 
 # ==========================================================
-# 1. CARGA ROBUSTA DEL CSV
+# 1. CARGA ROBUSTA DEL CSV (incluye ZIP específico)
 # ==========================================================
 @st.cache_data
 def load_data() -> pd.DataFrame:
     """
-    Carga el CSV de housing probando varias rutas.
-    Si no lo encuentra, permite al usuario subir el archivo.
+    Carga el dataset de housing probando varias rutas.
+    Incluye la ruta específica:
+    PruebaStreamlit/ML_EDA/housing_price_dataset.csv (1).zip
+    
+    Si no lo encuentra, permite al usuario subir el archivo
+    (CSV o ZIP con un CSV dentro).
     """
     base_dir = Path(__file__).resolve().parent
 
     candidate_paths = [
+        # Rutas clásicas de CSV
         base_dir / "housing_price_dataset.csv",
         base_dir / "housing_price_dataset_cleaned.csv",
         base_dir / "housing" / "housing_price_dataset.csv",
         base_dir.parent / "housing" / "housing_price_dataset.csv",
         base_dir.parent / "housing_price_dataset.csv",
+
+        # 👉 Ruta específica que me has pasado (ajustada como relativa)
+        base_dir / "ML_EDA" / "housing_price_dataset.csv (1).zip",
+        base_dir.parent / "ML_EDA" / "housing_price_dataset.csv (1).zip",
+        base_dir / "PruebaStreamlit" / "ML_EDA" / "housing_price_dataset.csv (1).zip",
     ]
 
     for path in candidate_paths:
         if path.exists():
             st.info(f"📄 Cargando dataset desde: `{path}`")
-            return pd.read_csv(path)
+            if path.suffix == ".zip":
+                # Lee el CSV directamente desde el ZIP
+                return pd.read_csv(path, compression="zip")
+            else:
+                return pd.read_csv(path)
 
     # Si no se encuentra en disco, se pide subirlo manualmente
     st.warning(
         "⚠️ No se ha encontrado el archivo de datos en las rutas esperadas.\n\n"
-        "Sube tu fichero `housing_price_dataset.csv` para continuar."
+        "Sube tu fichero `housing_price_dataset.csv` o un `.zip` que lo contenga para continuar."
     )
 
     uploaded = st.file_uploader(
-        "Sube aquí tu `housing_price_dataset.csv`",
-        type=["csv"]
+        "Sube aquí tu `housing_price_dataset.csv` o `.zip`",
+        type=["csv", "zip"]
     )
 
     if uploaded is not None:
         st.success("✅ Archivo subido correctamente, cargando datos...")
-        return pd.read_csv(uploaded)
+        if uploaded.name.endswith(".zip"):
+            return pd.read_csv(uploaded, compression="zip")
+        else:
+            return pd.read_csv(uploaded)
 
     st.stop()  # Detiene la app hasta que haya datos
+
 
 
 # ==========================================================
@@ -323,3 +341,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
