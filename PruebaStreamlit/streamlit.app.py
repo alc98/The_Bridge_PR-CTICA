@@ -871,36 +871,36 @@ def page_team():
         """
     )
 
-    team = [
+        team = [
         {
-            "name": "Luna Pérez",
+            "name": "Luna Pérez T.",
             "github": "https://github.com/LunaPerezT",
-            "photo": "images/team/miembro1.jpg"
+            "linkedin": "https://www.linkedin.com/in/luna-p%C3%A9rez-troncoso-0ab21929b/"
         },
         {
             "name": "Raquel Hernández",
             "github": "https://github.com/RaquelH18",
-            "photo": "images/team/miembro2.jpg"
+            "linkedin":"https://www.linkedin.com/in/raquel-hern%C3%A1ndez-lozano/"
         },
         {
-            "name": "María  Marín",
+            "name": "Mary Marín",
             "github": "https://github.com/mmarin3011-cloud",
-            "photo": "images/team/miembro3.jpg"
+            "linkedin":"https://www.linkedin.com/in/mmarin30/"
         },
         {
             "name": "Fabián G. Martín",
             "github": "https://github.com/FabsGMartin",
-            "photo": "images/team/miembro4.jpg"
+            "linkedin":""
         },
         {
             "name": "Miguel J. de la Torre",
             "github": "https://github.com/migueljdlt",
-            "photo": "images/team/miembro5.jpg"
+            "linkedin":"https://www.linkedin.com/in/miguel-jimenez-7403a2374/"
         },
         {
             "name": "Alejandro C.",
             "github": "https://github.com/alc98",
-            "photo": "images/team/miembro6.jpg"
+            "linkedin":"https://www.linkedin.com/in/alejandro-c-9b6525292/"
         },
     ]
 
@@ -971,6 +971,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
