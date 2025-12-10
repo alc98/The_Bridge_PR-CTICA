@@ -870,31 +870,36 @@ def page_team():
         Below you can see our profiles and GitHub links.
         """
     )
-
     team = [
         {
             "name": "Luna Pérez T.",
             "github": "https://github.com/LunaPerezT",
+            "linkedin": "https://www.linkedin.com/in/luna-p%C3%A9rez-troncoso-0ab21929b/"
         },
         {
             "name": "Raquel Hernández",
             "github": "https://github.com/RaquelH18",
+            "linkedin":"https://www.linkedin.com/in/raquel-hern%C3%A1ndez-lozano/"
         },
         {
             "name": "Mary Marín",
             "github": "https://github.com/mmarin3011-cloud",
+            "linkedin":"https://www.linkedin.com/in/mmarin30/"
         },
         {
             "name": "Fabián G. Martín",
             "github": "https://github.com/FabsGMartin",
+            "linkedin":""
         },
         {
             "name": "Miguel J. de la Torre",
             "github": "https://github.com/migueljdlt",
+            "linkedin":"https://www.linkedin.com/in/miguel-jimenez-7403a2374/"
         },
         {
             "name": "Alejandro C.",
             "github": "https://github.com/alc98",
+            "linkedin":"https://www.linkedin.com/in/alejandro-c-9b6525292/"
         },
     ]
 
@@ -966,6 +971,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
