@@ -323,6 +323,148 @@ From a clinical research perspective, the cohort can be succinctly described as:
 """)
 
 
+def page_model():
+    st.header("🧬 Deep learning model")
+    st.markdown(
+        """
+        In a real hospital workflow, such a model would typically act as a
+        **decision-support tool** or “second reader”. It can:
+        - Highlight suspicious regions that deserve closer inspection.
+        - Provide quantitative measurements (e.g. tumor volume).
+        - Help standardize reports across radiologists.
+        Final responsibility for diagnosis and treatment decisions always remains
+        with the clinical team.
+        """
+    )
+
+    st.markdown("## General architecture")
+    st.markdown(
+        """
+        Our medical AI system is based on a **deep learning model** that operates on
+        brain MRI slices.
+
+        At a high level, the pipeline is:
+
+        1. **Input**: MRI image (normalized and resized).
+        2. **Neural network** (e.g. U-Net or CNN):
+           - Extracts visual patterns (edges, textures, hyperintense regions...).
+           - Learns to distinguish between healthy tissue and tumor tissue.
+        3. **Output**:
+           - A **class prediction**: tumor / no tumor.
+           - Optionally, a **segmentation mask** highlighting tumor pixels.
+        """
+    )
+
+    st.markdown(
+        """
+        Although this demo focuses on 2D slices, many research systems work with:
+        - **3D convolutions**, which exploit volumetric context across slices.
+        - **Multi-sequence input** (T1, T1+contrast, T2, FLAIR) stacked as channels.
+        - **Multimodal fusion**, combining imaging with clinical variables
+          (age, performance status, molecular markers) or even genomics.
+        This richer input can improve performance for tasks such as grading or prognosis.
+        """
+    )
+
+    st.markdown("## Training (summary)")
+    st.markdown(
+        """
+        - **Data**: MRI dataset with tumor annotations.
+        - **Labels**:
+          - For classification: `0` = no tumor, `1` = tumor.
+          - For segmentation: masks where each pixel indicates tumor/no tumor.
+        - **Procedure**:
+          - Split into *train / validation / test*.
+          - Train for several epochs minimizing a loss function
+            (for example, *Binary Cross-Entropy* for classification or
+            *Dice loss* for segmentation).
+        - **Typical metrics**:
+          - Classification: accuracy, F1, sensitivity, specificity.
+          - Segmentation: Dice coefficient, IoU.
+        """
+    )
+
+    st.markdown("## Data preprocessing and quality control")
+    st.markdown(
+        """
+        Before training any medical imaging model, a robust preprocessing pipeline is essential:
+        - **Skull stripping** to remove non-brain tissue and reduce noise.
+        - **Intensity normalization** per scan to mitigate scanner- or protocol-related variability.
+        - **Spatial registration** to a common template when combining data from multiple patients.
+        - **Resampling to isotropic voxels** so that physical distances are comparable.
+        - **Data augmentation** (rotations, flips, elastic deformations, mild intensity shifts)
+          to improve generalization and simulate real-world acquisition variability.
+        A careful visual QC (quality control) step is usually performed with radiologists
+        to exclude corrupted or mislabeled scans.
+        """
+    )
+
+    st.markdown("## Evaluation and clinical interpretation")
+    st.markdown(
+        """
+        Beyond global metrics, clinicians and data scientists typically:
+        - Inspect **ROC and precision-recall curves** to select thresholds that balance
+          sensitivity (avoiding missed tumors) and specificity (avoiding unnecessary alarms).
+        - Use **calibration curves** to verify that predicted probabilities correspond
+          to actual risk, which is crucial when communicating risk to patients.
+        - Analyze **confusion matrices** stratified by subgroups (age, sex, scanner type,
+          tumor location) to detect potential bias.
+        - Compare performance with human experts in **reader studies** and investigate
+          cases where the model disagrees with the radiologist.
+        - Perform **external validation** on data from other hospitals to test
+          generalization beyond the training cohort.
+        """
+    )
+
+    st.markdown("## Integration with Flask")
+    st.info(
+        """
+        The model is deployed inside a **Flask API**:
+
+        - The Flask app exposes an HTTP endpoint (for example, `/predict`).
+        - Streamlit sends the MRI image to the endpoint in base64 format.
+        - Flask runs the deep learning model and returns:
+          - whether there is a tumor (`has_tumor`)
+          - the probability (`probability`)
+          - optionally, a mask (`mask_base64`).
+
+        This separation allows us to:
+        - Scale the model independently (GPU/CPU).
+        - Use Streamlit only as a lightweight visual interface.
+        """
+    )
+
+    st.markdown(
+        """
+        In a production setting, this architecture would be complemented with:
+        - **Authentication and audit logs** to track who requested each prediction.
+        - **Versioning** of models and training datasets to ensure reproducibility.
+        - **Monitoring** of latency, error rates and data drift to detect when
+          the model may need to be re-evaluated or retrained.
+        - Integration with hospital systems (PACS/RIS) using standards such as DICOM and HL7/FHIR.
+        """
+    )
+
+    st.markdown("## Limitations and responsible use")
+    st.warning(
+        """
+        This application is a **proof of concept** (PoC):
+
+        - It does not replace the judgment of a medical professional.
+        - Predictions may contain errors.
+        - Any real clinical use must undergo rigorous validation.
+        """
+    )
+
+    st.info(
+        """
+        Even models that perform well in retrospective studies can fail once deployed
+        if the patient population, scanners or imaging protocols change over time.
+        Continuous surveillance, periodic re-validation and collaboration between
+        data scientists, clinicians and MLOps engineers are essential for safe,
+        responsible AI in healthcare.
+        """
+    )
 
 
 
@@ -829,6 +971,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
