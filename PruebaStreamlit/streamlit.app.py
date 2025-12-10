@@ -871,7 +871,7 @@ def page_team():
         """
     )
 
-        team = [
+    team = [
         {
             "name": "Luna Pérez T.",
             "github": "https://github.com/LunaPerezT",
@@ -880,29 +880,30 @@ def page_team():
         {
             "name": "Raquel Hernández",
             "github": "https://github.com/RaquelH18",
-            "linkedin":"https://www.linkedin.com/in/raquel-hern%C3%A1ndez-lozano/"
+            "linkedin": "https://www.linkedin.com/in/raquel-hern%C3%A1ndez-lozano/"
         },
         {
             "name": "Mary Marín",
             "github": "https://github.com/mmarin3011-cloud",
-            "linkedin":"https://www.linkedin.com/in/mmarin30/"
+            "linkedin": "https://www.linkedin.com/in/mmarin30/"
         },
         {
             "name": "Fabián G. Martín",
             "github": "https://github.com/FabsGMartin",
-            "linkedin":""
+            "linkedin": ""
         },
         {
             "name": "Miguel J. de la Torre",
             "github": "https://github.com/migueljdlt",
-            "linkedin":"https://www.linkedin.com/in/miguel-jimenez-7403a2374/"
+            "linkedin": "https://www.linkedin.com/in/miguel-jimenez-7403a2374/"
         },
         {
             "name": "Alejandro C.",
             "github": "https://github.com/alc98",
-            "linkedin":"https://www.linkedin.com/in/alejandro-c-9b6525292/"
+            "linkedin": "https://www.linkedin.com/in/alejandro-c-9b6525292/"
         },
     ]
+
 
     # Grid de 2 filas x 3 columnas, con GitHub justo debajo del nombre
     for row_start in range(0, len(team), 3):
@@ -971,6 +972,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
