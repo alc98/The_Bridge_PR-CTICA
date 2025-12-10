@@ -870,6 +870,7 @@ def page_team():
         Below you can see our profiles and GitHub links.
         """
     )
+
     team = [
         {
             "name": "Luna Pérez T.",
@@ -903,19 +904,15 @@ def page_team():
         },
     ]
 
-
-    # Grid de 2 filas x 3 columnas, con GitHub justo debajo del nombre
+    # Grid de 2 filas x 3 columnas
     for row_start in range(0, len(team), 3):
         cols = st.columns(3)
         for col, member in zip(cols, team[row_start:row_start + 3]):
             with col:
                 st.markdown("### " + member["name"])
                 st.markdown(f"**GitHub:** [{member['github']}]({member['github']})")
-                try:
-                    img = Image.open(member["photo"])
-                    st.image(img, use_column_width=True, caption=member["name"])
-                except Exception:
-                    st.info(f"Photo not found: `{member['photo']}`")
+                if member["linkedin"]:
+                    st.markdown(f"[LinkedIn]({member['linkedin']})")
 
     st.info(
         """
@@ -925,6 +922,7 @@ def page_team():
         approval as a medical device.
         """
     )
+
 
 
 def main():
@@ -971,6 +969,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
