@@ -36,7 +36,7 @@ def load_data() -> pd.DataFrame:
         base_dir.parent / "housing" / "housing_price_dataset.csv",
         base_dir.parent / "housing_price_dataset.csv",
 
-        # 👉 Ruta específica que me has pasado (ajustada como relativa)
+        # Ruta específica que me has pasado (ajustada como relativa)
         base_dir / "ML_EDA" / "housing_price_dataset.csv (1).zip",
         base_dir.parent / "ML_EDA" / "housing_price_dataset.csv (1).zip",
         base_dir / "PruebaStreamlit" / "ML_EDA" / "housing_price_dataset.csv (1).zip",
@@ -166,11 +166,73 @@ def main():
         - 📏 Métricas de error en test (*MAE, RMSE, R²*).
         - 🧩 Una “matriz de fallo” (precio real vs predicho, agrupados en rangos).
         - 📃 Una tabla con ejemplos de predicción y su error.
+        - 📊 Visualizaciones básicas del dataset.
         """
     )
 
-    # 1) Cargar datos y entrenar modelo
+    # 1) Cargar datos
     df = load_data()
+
+    # ==========================================================
+    # 3.0. EXPLORACIÓN RÁPIDA DEL DATASET
+    # ==========================================================
+    st.header("👀 Exploración rápida del dataset")
+
+    col_a, col_b = st.columns(2)
+
+    with col_a:
+        st.subheader("Vista previa")
+        st.dataframe(df.head(), use_container_width=True)
+
+    with col_b:
+        st.subheader("Descripción numérica")
+        st.write(df.describe().T)
+
+    st.markdown("### Distribuciones de variables clave")
+
+    # Histograma Price
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        st.caption("Distribución de Price")
+        fig1, ax1 = plt.subplots()
+        ax1.hist(df["Price"], bins=30)
+        ax1.set_xlabel("Price")
+        ax1.set_ylabel("Frecuencia")
+        fig1.tight_layout()
+        st.pyplot(fig1)
+
+    with col2:
+        st.caption("Distribución de SquareFeet")
+        fig2, ax2 = plt.subplots()
+        ax2.hist(df["SquareFeet"], bins=30)
+        ax2.set_xlabel("SquareFeet")
+        ax2.set_ylabel("Frecuencia")
+        fig2.tight_layout()
+        st.pyplot(fig2)
+
+    with col3:
+        st.caption("Distribución de YearBuilt")
+        fig3, ax3 = plt.subplots()
+        ax3.hist(df["YearBuilt"], bins=30)
+        ax3.set_xlabel("YearBuilt")
+        ax3.set_ylabel("Frecuencia")
+        fig3.tight_layout()
+        st.pyplot(fig3)
+
+    st.markdown("### Relación entre tamaño y precio")
+
+    fig_scatter, ax_scatter = plt.subplots()
+    ax_scatter.scatter(df["SquareFeet"], df["Price"], alpha=0.5)
+    ax_scatter.set_xlabel("SquareFeet")
+    ax_scatter.set_ylabel("Price")
+    ax_scatter.set_title("Price vs SquareFeet")
+    fig_scatter.tight_layout()
+    st.pyplot(fig_scatter)
+
+    st.markdown("---")
+
+    # 2) Entrenar modelo (se cachea)
     pipe, X_train, X_test, y_train, y_test, X_full, y_full = train_model(df)
 
     # RANGOS reales del dataset para SLIDERS
@@ -278,7 +340,11 @@ def main():
     y_pred_test = pipe.predict(X_test)
 
     mae = mean_absolute_error(y_test, y_pred_test)
-    rmse = mean_squared_error(y_test, y_pred_test, squared=False)
+
+    # Compatibilidad con versiones antiguas de sklearn: RMSE sin `squared=`
+    mse = mean_squared_error(y_test, y_pred_test)
+    rmse = np.sqrt(mse)
+
     r2 = r2_score(y_test, y_pred_test)
 
     c1, c2, c3 = st.columns(3)
@@ -341,4 +407,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
