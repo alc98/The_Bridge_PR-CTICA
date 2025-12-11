@@ -57,7 +57,6 @@ def load_data() -> pd.DataFrame:
 # ==========================================================
 # 2. ENTRENAR MODELO XGBOOST + PIPELINE
 # ==========================================================
-@st.cache_resource
 def train_model(df: pd.DataFrame):
     """
     - Aplica feature engineering.
@@ -387,5 +386,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
