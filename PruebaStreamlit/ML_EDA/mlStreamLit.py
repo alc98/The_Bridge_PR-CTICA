@@ -13,7 +13,6 @@ from xgboost import XGBRegressor
 import matplotlib.pyplot as plt
 
 
-@st.cache_data
 def load_data() -> pd.DataFrame:
     """
     Carga el dataset de housing desde una única ruta específica:
@@ -388,4 +387,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
