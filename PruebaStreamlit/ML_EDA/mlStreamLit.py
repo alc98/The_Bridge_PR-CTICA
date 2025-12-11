@@ -5,13 +5,12 @@ from pathlib import Path
 
 from sklearn.model_selection import train_test_split
 from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.preprocessing import OneHotEncoder
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
 from xgboost import XGBRegressor
 import matplotlib.pyplot as plt
-
 
 
 # ==========================================================
@@ -23,7 +22,7 @@ def load_data() -> pd.DataFrame:
     Carga el dataset de housing probando varias rutas.
     Incluye la ruta específica:
     PruebaStreamlit/ML_EDA/housing_price_dataset.csv (1).zip
-    
+
     Si no lo encuentra, permite al usuario subir el archivo
     (CSV o ZIP con un CSV dentro).
     """
@@ -74,14 +73,14 @@ def load_data() -> pd.DataFrame:
 
 
 # ==========================================================
-# 2. ENTRENAR MODELO XGBOOST + PIPELINE (VENTANA 1)
+# 2. ENTRENAR MODELO XGBOOST + PIPELINE
 # ==========================================================
 @st.cache_resource
-def train_model_xgb(df: pd.DataFrame):
+def train_model(df: pd.DataFrame):
     """
     - Aplica feature engineering.
     - Define preprocessor (ColumnTransformer).
-    - Entrena un XGBRegressor dentro de un Pipeline.
+    - Entrena un XGBoostRegressor dentro de un Pipeline.
     - Devuelve el pipeline entrenado y el split de test.
     """
 
@@ -109,9 +108,7 @@ def train_model_xgb(df: pd.DataFrame):
 
     preprocessor = ColumnTransformer(
         transformers=[
-            # En versiones nuevas de sklearn, el arg es sparse_output=False.
-            # Si da error, cambia sparse_output por sparse=False.
-            ("cat", OneHotEncoder(handle_unknown="ignore", sparse_output=False), categorical_features),
+            ("cat", OneHotEncoder(handle_unknown="ignore"), categorical_features),
             ("num", "passthrough", numeric_features),
         ]
     )
@@ -147,142 +144,15 @@ def train_model_xgb(df: pd.DataFrame):
 
 
 # ==========================================================
-# 3. ENTRENAR MODELO RED NEURONAL (VENTANA 2)
+# 3. APP STREAMLIT
 # ==========================================================
-@st.cache_resource
-def train_model_nn(df: pd.DataFrame):
-    """
-    Implementa un modelo de Red Neuronal Profunda (similar a h2o.deeplearning)
-    para predecir el precio de casas.
-
-    - Split 80% / 20% -> train+valid / test
-    - Del 80%, otro split 80% / 20% -> train / valid
-      => 64% train, 16% valid, 20% test.
-    - One-Hot para categóricas (Neighborhood).
-    - Estandarización de las features (StandardScaler).
-    - Arquitectura con varias capas ocultas + Dropout.
-    - Optimización con MAE como función de pérdida principal.
-    """
-
-    df_fe = df.copy()
-
-    # ===== Mismo feature engineering que para XGBoost =====
-    df_fe["Has_2plus_Bath"] = (df_fe["Bathrooms"] >= 2).astype(int)
-    df_fe["Has_3plus_Bed"] = (df_fe["Bedrooms"] >= 3).astype(int)
-    df_fe["New_House"] = (df_fe["YearBuilt"] >= 2000).astype(int)
-
-    X = df_fe.drop(columns=["Price"])
-    y = df_fe["Price"].values
-
-    numeric_features = [
-        "SquareFeet",
-        "Bedrooms",
-        "Bathrooms",
-        "YearBuilt",
-        "Has_2plus_Bath",
-        "Has_3plus_Bed",
-        "New_House",
-    ]
-    categorical_features = ["Neighborhood"]
-
-    preprocessor = ColumnTransformer(
-        transformers=[
-            ("cat", OneHotEncoder(handle_unknown="ignore", sparse_output=False), categorical_features),
-            ("num", "passthrough", numeric_features),
-        ]
+def main():
+    st.set_page_config(
+        page_title="House Price Predictor",
+        page_icon="🏠",
+        layout="wide"
     )
 
-    # ---- 1º split: 80% train+valid, 20% test ----
-    X_temp, X_test, y_temp, y_test = train_test_split(
-        X, y,
-        test_size=0.2,
-        random_state=42
-    )
-
-    # ---- 2º split: del 80%, 80% train y 20% valid ----
-    X_train, X_val, y_train, y_val = train_test_split(
-        X_temp, y_temp,
-        test_size=0.2,   # 20% de 80% => 16% del total
-        random_state=42
-    )
-
-    # ---- One-Hot + numéricas ----
-    X_train_proc = preprocessor.fit_transform(X_train)
-    X_val_proc = preprocessor.transform(X_val)
-    X_test_proc = preprocessor.transform(X_test)
-
-    # ---- Escalado global (num + dummies) ----
-    scaler = StandardScaler()
-    X_train_sc = scaler.fit_transform(X_train_proc)
-    X_val_sc = scaler.transform(X_val_proc)
-    X_test_sc = scaler.transform(X_test_proc)
-
-    input_dim = X_train_sc.shape[1]
-
-    # ===== Definimos la arquitectura de la red =====
-    model = Sequential()
-    # Capa de entrada -> oculta 1
-    model.add(Dense(128, activation="relu", input_dim=input_dim))
-    model.add(Dropout(0.2))
-    # Oculta 2
-    model.add(Dense(64, activation="relu"))
-    model.add(Dropout(0.2))
-    # Oculta 3
-    model.add(Dense(32, activation="relu"))
-    # Capa de salida (regresión)
-    model.add(Dense(1, activation="linear"))
-
-    # ===== Compilación =====
-    # Usamos MAE como función de pérdida (como en tu memoria),
-    # y mostramos MAE como métrica.
-    model.compile(
-        optimizer="adam",
-        loss="mae",
-        metrics=["mae"]
-    )
-
-    # ===== Entrenamiento =====
-    # Mini-batch size = 32 (como recomiendan Masters & Luschi).
-    early_stop = EarlyStopping(
-        monitor="val_loss",
-        patience=20,
-        restore_best_weights=True
-    )
-
-    history = model.fit(
-        X_train_sc,
-        y_train,
-        validation_data=(X_val_sc, y_val),
-        epochs=200,
-        batch_size=32,
-        callbacks=[early_stop],
-        verbose=0
-    )
-
-    # Guardamos history.history (dict) porque el objeto History no es serializable.
-    history_dict = history.history
-
-    return {
-        "model": model,
-        "preprocessor": preprocessor,
-        "scaler": scaler,
-        "X_train": X_train,
-        "X_val": X_val,
-        "X_test": X_test,
-        "y_train": y_train,
-        "y_val": y_val,
-        "y_test": y_test,
-        "X_train_sc": X_train_sc,
-        "X_val_sc": X_val_sc,
-        "X_test_sc": X_test_sc,
-        "history": history_dict,
-    }
-
-
-# ==========================================================
-# 4. PÁGINA XGBOOST
-# ==========================================================
-def page_xgboost(df: pd.DataFrame):
     st.title("🏠 House Price Predictor (XGBoost + Streamlit)")
 
     st.markdown(
@@ -299,8 +169,11 @@ def page_xgboost(df: pd.DataFrame):
         """
     )
 
+    # 1) Cargar datos
+    df = load_data()
+
     # ==========================================================
-    # 4.0. EXPLORACIÓN RÁPIDA DEL DATASET
+    # 3.0. EXPLORACIÓN RÁPIDA DEL DATASET
     # ==========================================================
     st.header("👀 Exploración rápida del dataset")
 
@@ -359,7 +232,7 @@ def page_xgboost(df: pd.DataFrame):
     st.markdown("---")
 
     # 2) Entrenar modelo (se cachea)
-    pipe, X_train, X_test, y_train, y_test, X_full, y_full = train_model_xgb(df)
+    pipe, X_train, X_test, y_train, y_test, X_full, y_full = train_model(df)
 
     # RANGOS reales del dataset para SLIDERS
     min_sqft, max_sqft = int(df["SquareFeet"].min()), int(df["SquareFeet"].max())
@@ -369,9 +242,9 @@ def page_xgboost(df: pd.DataFrame):
     neighborhoods = sorted(df["Neighborhood"].unique())
 
     # ==========================================================
-    # 4.1. PREDICCIÓN MANUAL (SLIDERS + BINARIOS 0/1)
+    # 3.1. PREDICCIÓN MANUAL (SLIDERS + BINARIOS 0/1)
     # ==========================================================
-    st.sidebar.header("🧮 Introduce los datos de la vivienda (XGBoost)")
+    st.sidebar.header("🧮 Introduce los datos de la vivienda")
 
     sqft = st.sidebar.slider(
         "Superficie (SquareFeet)",
@@ -403,8 +276,7 @@ def page_xgboost(df: pd.DataFrame):
 
     neighborhood = st.sidebar.selectbox(
         "Barrio (Neighborhood)",
-        neighborhoods,
-        key="xgb_neighborhood"
+        neighborhoods
     )
 
     st.sidebar.markdown("---")
@@ -413,22 +285,19 @@ def page_xgboost(df: pd.DataFrame):
     # Checkboxes para 0/1 (permite control manual, pero por defecto coherentes)
     has_2plus_bath = st.sidebar.checkbox(
         "Has_2plus_Bath (baños ≥ 2)",
-        value=(bathrooms >= 2),
-        key="xgb_has_2plus_bath"
+        value=(bathrooms >= 2)
     )
     has_3plus_bed = st.sidebar.checkbox(
         "Has_3plus_Bed (habitaciones ≥ 3)",
-        value=(bedrooms >= 3),
-        key="xgb_has_3plus_bed"
+        value=(bedrooms >= 3)
     )
     new_house = st.sidebar.checkbox(
         "New_House (YearBuilt ≥ 2000)",
-        value=(year_built >= 2000),
-        key="xgb_new_house"
+        value=(year_built >= 2000)
     )
 
     st.sidebar.markdown("---")
-    st.sidebar.markdown("Cuando estés listo, pulsa el botón para predecir (XGBoost).")
+    st.sidebar.markdown("Cuando estés listo, pulsa el botón para predecir.")
 
     # Construimos el DataFrame con exactamente las columnas esperadas
     input_dict = {
@@ -446,9 +315,9 @@ def page_xgboost(df: pd.DataFrame):
     col_pred, col_info = st.columns([2, 1])
 
     with col_pred:
-        st.subheader("🔮 Predicción de precio para la vivienda introducida (XGBoost)")
+        st.subheader("🔮 Predicción de precio para la vivienda introducida")
 
-        if st.button("Calcular predicción (XGBoost)"):
+        if st.button("Calcular predicción"):
             pred_price = pipe.predict(input_df)[0]
             st.success(f"💰 Precio estimado: **{pred_price:,.0f}** (unidad monetaria del dataset)")
         else:
@@ -463,9 +332,9 @@ def page_xgboost(df: pd.DataFrame):
     st.markdown("---")
 
     # ==========================================================
-    # 4.2. MÉTRICAS GLOBALES Y MATRIZ DE FALLO
+    # 3.2. MÉTRICAS GLOBALES Y MATRIZ DE FALLO
     # ==========================================================
-    st.header("📉 Rendimiento del modelo XGBoost en el conjunto de test")
+    st.header("📉 Rendimiento del modelo en el conjunto de test")
 
     y_pred_test = pipe.predict(X_test)
 
@@ -498,7 +367,7 @@ def page_xgboost(df: pd.DataFrame):
 
     # Heatmap simple con matplotlib
     fig, ax = plt.subplots(figsize=(6, 4))
-    im = ax.imshow(conf_mat.values)
+    im = ax.imshow(conf_mat.values, cmap="Blues")
 
     ax.set_xticks(range(len(conf_mat.columns)))
     ax.set_xticklabels([str(c) for c in conf_mat.columns], rotation=45, ha="right")
@@ -512,14 +381,14 @@ def page_xgboost(df: pd.DataFrame):
 
     ax.set_xlabel("Precio predicho (bins)")
     ax.set_ylabel("Precio real (bins)")
-    ax.set_title("Matriz de fallo (true vs pred binned) - XGBoost")
+    ax.set_title("Matriz de fallo (true vs pred binned)")
     fig.tight_layout()
     st.pyplot(fig)
 
     # ==========================================================
-    # 4.3. TABLA DE ERRORES POR VIVIENDA
+    # 3.3. TABLA DE ERRORES POR VIVIENDA
     # ==========================================================
-    st.markdown("### 📃 Ejemplos de predicción vs realidad (XGBoost)")
+    st.markdown("### 📃 Ejemplos de predicción vs realidad")
 
     comp_df = pd.DataFrame({
         "Precio_real": y_test.values,
@@ -535,10 +404,6 @@ def page_xgboost(df: pd.DataFrame):
     st.caption("Se muestran las 20 viviendas donde el modelo más se equivoca (en valor absoluto).")
 
 
-
-
-
 if __name__ == "__main__":
     main()
-
 
