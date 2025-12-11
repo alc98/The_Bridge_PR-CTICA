@@ -13,6 +13,9 @@ from xgboost import XGBRegressor
 import matplotlib.pyplot as plt
 
 
+# ==========================================================
+# 1. CARGA DEL CSV DESDE UN ÚNICO PATH
+# ==========================================================
 def load_data() -> pd.DataFrame:
     """
     Carga el dataset de housing desde una única ruta específica:
@@ -51,7 +54,6 @@ def load_data() -> pd.DataFrame:
             return pd.read_csv(uploaded)
 
     st.stop()  # Detiene la app hasta que haya datos
-
 
 
 # ==========================================================
@@ -212,7 +214,7 @@ def main():
 
     st.markdown("---")
 
-    # 2) Entrenar modelo (se cachea)
+    # 2) Entrenar modelo
     pipe, X_train, X_test, y_train, y_test, X_full, y_full = train_model(df)
 
     # RANGOS reales del dataset para SLIDERS
@@ -263,7 +265,6 @@ def main():
     st.sidebar.markdown("---")
     st.sidebar.subheader("Variables binarias (0 / 1)")
 
-    # Checkboxes para 0/1 (permite control manual, pero por defecto coherentes)
     has_2plus_bath = st.sidebar.checkbox(
         "Has_2plus_Bath (baños ≥ 2)",
         value=(bathrooms >= 2)
@@ -280,7 +281,6 @@ def main():
     st.sidebar.markdown("---")
     st.sidebar.markdown("Cuando estés listo, pulsa el botón para predecir.")
 
-    # Construimos el DataFrame con exactamente las columnas esperadas
     input_dict = {
         "Neighborhood": [neighborhood],
         "SquareFeet": [sqft],
@@ -320,8 +320,6 @@ def main():
     y_pred_test = pipe.predict(X_test)
 
     mae = mean_absolute_error(y_test, y_pred_test)
-
-    # Compatibilidad con versiones antiguas de sklearn: RMSE sin squared=
     mse = mean_squared_error(y_test, y_pred_test)
     rmse = np.sqrt(mse)
     r2 = r2_score(y_test, y_pred_test)
@@ -333,7 +331,6 @@ def main():
 
     st.markdown("### 🔢 Matriz de fallo (precio real vs precio predicho, por rangos)")
 
-    # Bineamos precios reales y predichos en cuartiles
     n_bins = 4
     true_bins = pd.qcut(y_test, q=n_bins, duplicates="drop")
     pred_bins = pd.qcut(y_pred_test, q=n_bins, duplicates="drop")
@@ -345,9 +342,8 @@ def main():
     )
     st.dataframe(conf_mat, use_container_width=True)
 
-    # Heatmap simple con matplotlib
     fig, ax = plt.subplots(figsize=(6, 4))
-    im = ax.imshow(conf_mat.values, cmap="Blues")
+    im = ax.imshow(conf_mat.values)
 
     ax.set_xticks(range(len(conf_mat.columns)))
     ax.set_xticklabels([str(c) for c in conf_mat.columns], rotation=45, ha="right")
@@ -365,9 +361,6 @@ def main():
     fig.tight_layout()
     st.pyplot(fig)
 
-    # ==========================================================
-    # 3.3. TABLA DE ERRORES POR VIVIENDA
-    # ==========================================================
     st.markdown("### 📃 Ejemplos de predicción vs realidad")
 
     comp_df = pd.DataFrame({
@@ -386,6 +379,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
