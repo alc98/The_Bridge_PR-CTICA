@@ -12,10 +12,6 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from xgboost import XGBRegressor
 import matplotlib.pyplot as plt
 
-# Keras / TensorFlow para la red neuronal
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Dropout
-from tensorflow.keras.callbacks import EarlyStopping
 
 
 # ==========================================================
@@ -539,32 +535,10 @@ def page_xgboost(df: pd.DataFrame):
     st.caption("Se muestran las 20 viviendas donde el modelo más se equivoca (en valor absoluto).")
 
 
-# ==========================================================
-# 6. APP STREAMLIT (SELECTOR DE VENTANA)
-# ==========================================================
-def main():
-    st.set_page_config(
-        page_title="House Price Predictor (XGBoost + NN)",
-        page_icon="🏠",
-        layout="wide"
-    )
 
-    # 1) Cargar datos
-    df = load_data()
-
-    # Selector de ventana en la barra lateral
-    st.sidebar.title("🧭 Navegación")
-    page = st.sidebar.radio(
-        "Elige la ventana:",
-        ("📈 Modelo XGBoost", "🧠 Red Neuronal (Deep Learning)")
-    )
-
-    if page == "📈 Modelo XGBoost":
-        page_xgboost(df)
-    else:
-        page_nn(df)
 
 
 if __name__ == "__main__":
     main()
+
 
