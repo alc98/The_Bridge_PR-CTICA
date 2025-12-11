@@ -30,7 +30,7 @@ def load_data() -> pd.DataFrame:
 
     candidate_paths = [
         # Rutas clásicas de CSV
-        base_dir / "housing_price_dataset.csv",
+        base_dir / "housing_price_dataset(1).csv",
         base_dir / "housing_price_dataset_cleaned.csv",
         base_dir / "housing" / "housing_price_dataset.csv",
         base_dir.parent / "housing" / "housing_price_dataset.csv",
@@ -406,4 +406,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
