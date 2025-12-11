@@ -30,7 +30,7 @@ def load_data() -> pd.DataFrame:
 
     candidate_paths = [
         # Rutas clásicas de CSV
-        base_dir / "housing_price_dataset(1).csv",
+        base_dir / "housing_price_dataset.csv",
         base_dir / "housing_price_dataset_cleaned.csv",
         base_dir / "housing" / "housing_price_dataset.csv",
         base_dir.parent / "housing" / "housing_price_dataset.csv",
@@ -44,7 +44,7 @@ def load_data() -> pd.DataFrame:
 
     for path in candidate_paths:
         if path.exists():
-            st.info(f"📄 Cargando dataset desde: `{path}`")
+            st.info(f"📄 Cargando dataset desde: {path}")
             if path.suffix == ".zip":
                 # Lee el CSV directamente desde el ZIP
                 return pd.read_csv(path, compression="zip")
@@ -54,11 +54,11 @@ def load_data() -> pd.DataFrame:
     # Si no se encuentra en disco, se pide subirlo manualmente
     st.warning(
         "⚠️ No se ha encontrado el archivo de datos en las rutas esperadas.\n\n"
-        "Sube tu fichero `housing_price_dataset.csv` o un `.zip` que lo contenga para continuar."
+        "Sube tu fichero housing_price_dataset.csv o un .zip que lo contenga para continuar."
     )
 
     uploaded = st.file_uploader(
-        "Sube aquí tu `housing_price_dataset.csv` o `.zip`",
+        "Sube aquí tu housing_price_dataset.csv o .zip",
         type=["csv", "zip"]
     )
 
@@ -80,7 +80,7 @@ def train_model(df: pd.DataFrame):
     """
     - Aplica feature engineering.
     - Define preprocessor (ColumnTransformer).
-    - Entrena un XGBoostRegressor dentro de un Pipeline.
+    - Entrena un XGBRegressor dentro de un Pipeline.
     - Devuelve el pipeline entrenado y el split de test.
     """
 
@@ -340,10 +340,9 @@ def main():
 
     mae = mean_absolute_error(y_test, y_pred_test)
 
-    # Compatibilidad con versiones antiguas de sklearn: RMSE sin `squared=`
+    # Compatibilidad con versiones antiguas de sklearn: RMSE sin squared=
     mse = mean_squared_error(y_test, y_pred_test)
     rmse = np.sqrt(mse)
-
     r2 = r2_score(y_test, y_pred_test)
 
     c1, c2, c3 = st.columns(3)
@@ -406,5 +405,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
